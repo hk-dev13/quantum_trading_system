@@ -1,4 +1,5 @@
-# filepath: main.py
+# Deskripsi: Titik masuk utama untuk menjalankan sistem backtest.
+#
 import config
 from data_fetcher import build_price_df
 from predictor import predict_returns_ma
@@ -15,7 +16,6 @@ def run_simulation_loop(price_data, optimizer_func):
         chosen_assets, _ = optimizer_func(predictions)
         current_date = price_data.index[i]
         daily_choices[current_date] = chosen_assets
-        # Kita bisa nonaktifkan print harian agar output lebih bersih
         # print(f"Decision for {current_date.date()}: Choose {chosen_assets}")
     return daily_choices
 
@@ -32,7 +32,7 @@ def run_comparison_backtest():
     classical_choices = run_simulation_loop(price_data, optimize_portfolio_classical)
     classical_equity = run_simple_backtest(price_data, classical_choices, config.INITIAL_CAPITAL)
 
-    print("\n3. Running Quantum Strategy (QAOA) Simulation... (This will be slow)")
+    print("\n3. Running Quantum Strategy (QAOA) Simulation...")
     qaoa_choices = run_simulation_loop(price_data, optimize_portfolio_qaoa)
     qaoa_equity = run_simple_backtest(price_data, qaoa_choices, config.INITIAL_CAPITAL)
 
