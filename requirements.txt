@@ -1,0 +1,16 @@
+# filepath: c:\Users\Husni kusuma\Desktop\quantum_trading_system\requirements.txt
+# Qiskit stack (versi stabil sebelum symengine)
+qiskit==0.46.0
+qiskit-optimization==0.6.0
+qiskit-aer==0.13.3
+
+# Data & Analisis
+pandas
+numpy
+scikit-learn
+
+# API & Utilitas
+requests
+
+# Visualisasi
+matplotlib
