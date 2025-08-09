@@ -7,23 +7,34 @@ from optimizer import optimize_portfolio_classical, optimize_portfolio_qaoa
 # Tambahkan plot_drawdown_curves ke impor
 from backtester import run_simple_backtest, plot_equity_curves, calculate_sharpe_ratio, calculate_max_drawdown, plot_drawdown_curves
 
-def run_simulation_loop(price_data, optimizer_func):
-    """Menjalankan loop simulasi historis untuk satu fungsi optimizer."""
+def run_simulation_loop(price_data, optimizer_func, is_qaoa=False):
+    """
+    Menjalankan loop simulasi historis.
+    Jika is_qaoa=True, terapkan filter Top-N sebelum optimasi.
+    """
     daily_choices = {}
-    # Kita butuh beberapa hari data untuk fitur pertama (misal 10 hari)
     start_day = 10 
     for i in range(start_day, len(price_data)):
         historical_slice = price_data.iloc[:i]
-        # Gunakan prediktor ML baru
         predictions = predict_returns_ml(historical_slice) 
         
-        # Hanya optimalkan jika ada sinyal positif
-        if (predictions > 0).any():
-            chosen_assets, _ = optimizer_func(predictions)
-        else:
-            chosen_assets = [] # Tidak berinvestasi jika tidak ada sinyal positif
+        # --- LOGIKA BARU UNTUK STRATEGI HIBRID ---
+        if is_qaoa:
+            # Pilih 3 aset teratas berdasarkan skor prediksi AI
+            top_n_preds = predictions.nlargest(3)
+            
+            # Hanya optimalkan jika ada sinyal positif di antara top 3
+            if (top_n_preds > 0).any():
+                chosen_assets, _ = optimizer_func(top_n_preds)
+            else:
+                chosen_assets = []
+        else: # Logika untuk strategi klasik (tetap menggunakan semua aset)
+            if (predictions > 0).any():
+                chosen_assets, _ = optimizer_func(predictions)
+            else:
+                chosen_assets = []
 
-        current_date = price_data.index[i-1] # Keputusan untuk hari esok dibuat hari ini
+        current_date = price_data.index[i-1]
         daily_choices[current_date] = chosen_assets
     return daily_choices
 
@@ -36,12 +47,14 @@ def run_comparison_backtest():
         print("Exiting due to data fetching failure.")
         return
 
-    print("\n2. Running Classical Strategy Simulation...")
-    classical_choices = run_simulation_loop(price_data, optimize_portfolio_classical)
+    print("\n2. Running Classical Strategy Simulation (on all assets)...")
+    # Jalankan strategi klasik pada semua aset
+    classical_choices = run_simulation_loop(price_data, optimize_portfolio_classical, is_qaoa=False)
     classical_equity = run_simple_backtest(price_data, classical_choices, config.INITIAL_CAPITAL)
 
-    print("\n3. Running Quantum Strategy (QAOA) Simulation...")
-    qaoa_choices = run_simulation_loop(price_data, optimize_portfolio_qaoa)
+    print("\n3. Running Hybrid AI-Quantum Strategy (Top-3 assets)...")
+    # Jalankan strategi kuantum hanya pada 3 aset terbaik pilihan AI
+    qaoa_choices = run_simulation_loop(price_data, optimize_portfolio_qaoa, is_qaoa=True)
     qaoa_equity = run_simple_backtest(price_data, qaoa_choices, config.INITIAL_CAPITAL)
 
     # --- HASIL LAMA ---
