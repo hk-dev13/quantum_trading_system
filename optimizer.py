@@ -21,7 +21,10 @@ def _create_objective(predictions):
     # Ini adalah proxy, bukan kovarians statistik.
     sigma = np.diag(1 / (np.abs(mu) + 1e-6)) # Matriks diagonal risiko
     
-    q = 0.5  # Faktor penyeimbang. 0.5 berarti return dan risiko sama pentingnya.
+    # UBAH FAKTOR RISIKO:
+    # Beri bobot lebih pada return (80%) daripada risiko (20%).
+    # Ini akan membuat sistem lebih berani mengambil posisi.
+    q = 0.8
     
     # Fungsi objektif: q * mu - (1-q) * diag(sigma)
     # Kita ingin memaksimalkan return (mu) dan meminimalkan risiko (sigma)
