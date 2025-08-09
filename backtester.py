@@ -4,6 +4,21 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+def calculate_sharpe_ratio(portfolio_values, risk_free_rate=0.02):
+    """Menghitung Sharpe Ratio tahunan dari nilai portofolio harian."""
+    daily_returns = portfolio_values.pct_change().dropna()
+    if daily_returns.empty or daily_returns.std() == 0:
+        return 0.0
+    excess_returns = daily_returns - risk_free_rate / 252
+    sharpe_ratio = excess_returns.mean() / excess_returns.std()
+    return sharpe_ratio * np.sqrt(252)
+
+def calculate_max_drawdown(portfolio_values):
+    """Menghitung Maximum Drawdown dari nilai portofolio harian."""
+    rolling_max = portfolio_values.cummax()
+    daily_drawdown = (portfolio_values - rolling_max) / rolling_max
+    return daily_drawdown.min()
+
 def run_simple_backtest(price_df, daily_choices, initial_capital):
     """
     Menjalankan backtest sederhana.
