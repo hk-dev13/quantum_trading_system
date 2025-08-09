@@ -72,3 +72,22 @@ def plot_equity_curves(equity_curves, title='Strategy Performance Comparison'):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+def plot_drawdown_curves(equity_curves, title='Strategy Drawdown Over Time'):
+    """Membuat plot drawdown dari waktu ke waktu untuk setiap strategi."""
+    plt.figure(figsize=(12, 6))
+    for label, curve in equity_curves.items():
+        # Hitung drawdown harian
+        rolling_max = curve.cummax()
+        daily_drawdown = (curve - rolling_max) / rolling_max
+        
+        # Plot drawdown (dikalikan 100 untuk persentase)
+        (daily_drawdown * 100).plot(label=label)
+    
+    plt.title(title)
+    plt.xlabel('Date')
+    plt.ylabel('Drawdown (%)')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()

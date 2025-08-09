@@ -17,7 +17,7 @@ def predict_returns_ma(price_df, window):
 def predict_returns_ml(price_df):
     """
     Memprediksi return menggunakan model Logistic Regression sederhana.
-    Model ini memprediksi apakah harga besok akan naik (1) atau tidak (-1).
+    (Versi sebelum penambahan fitur momentum)
     """
     predictions = {}
     
@@ -25,8 +25,8 @@ def predict_returns_ml(price_df):
         # 1. Feature Engineering: Gunakan return 1, 3, dan 5 hari sebelumnya
         returns = price_df[asset].pct_change().dropna()
         
-        if len(returns) < 10: # Butuh data minimal untuk membuat fitur & melatih
-            predictions[asset] = 0 # Tidak ada sinyal jika data kurang
+        if len(returns) < 10:
+            predictions[asset] = 0
             continue
 
         features = pd.DataFrame({
@@ -52,12 +52,9 @@ def predict_returns_ml(price_df):
         model = LogisticRegression(solver='liblinear', random_state=42)
         model.fit(X, y)
         
-        # Prediksi untuk hari berikutnya menggunakan data terakhir yang tersedia
-        last_features = features.iloc[[-1]].fillna(0) # Isi NaN jika ada
-        pred_proba = model.predict_proba(last_features)[0][1] # Probabilitas kelas '1' (naik)
+        last_features = features.iloc[[-1]].fillna(0)
+        pred_proba = model.predict_proba(last_features)[0][1]
         
-        # Beri skor berdasarkan probabilitas, bukan hanya 0 atau 1
-        # Skor antara -1 dan 1
         predictions[asset] = 2 * (pred_proba - 0.5)
 
     return pd.Series(predictions)

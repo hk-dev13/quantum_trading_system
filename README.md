@@ -4,11 +4,11 @@ Proyek ini mengimplementasikan dan membandingkan strategi trading menggunakan op
 
 ---
 
-## Hasil Terbaru: Backtest dengan Prediktor ML (per 2025-08-09)
+## Hasil Terbaik (ML Predictor, QAOA reps=1)
 
-Hasil ini didapat setelah meng-upgrade prediktor dari Moving Average sederhana ke model Machine Learning (Logistic Regression) dan menambahkan metrik evaluasi risiko.
+Konfigurasi berikut memberikan kinerja terbaik setelah serangkaian eksperimen, menggunakan prediktor Machine Learning (Logistic Regression) dan kedalaman sirkuit QAOA `reps=1`.
 
-### Metrik Kinerja
+### Metrik Kinerja (per 2025-08-09)
 
 | Metric             | Classical Optimizer | QAOA Optimizer |
 |--------------------|---------------------|----------------|
@@ -18,7 +18,16 @@ Hasil ini didapat setelah meng-upgrade prediktor dari Moving Average sederhana k
 
 ### Grafik Performa
 
-![Perbandingan Performa dengan Prediktor ML](img/Strategy_performance(ML_Predictor).png)
+![Perbandingan Performa dengan Prediktor ML](img/strategy_performance_ml.png)
+![Perbandingan Drawdown dengan Prediktor ML](img/strategy_drawdown_ml.png)
+
+---
+
+## Log Eksperimen & Temuan
+
+1.  **Visualisasi Risiko:** Menambahkan plot *Drawdown Over Time* memberikan wawasan visual tentang profil risiko. Terlihat bahwa meskipun QAOA memberikan return lebih tinggi, ia juga mengalami drawdown yang sedikit lebih dalam di beberapa titik.
+2.  **Feature Engineering (Momentum):** Eksperimen dengan menambahkan fitur `momentum_10` ke prediktor ML ternyata **menurunkan kinerja**. Sharpe Ratio turun dan Max Drawdown meningkat. Ini menunjukkan bahwa tidak semua fitur tambahan bersifat membantu.
+3.  **Parameter Tuning QAOA (reps=2):** Eksperimen dengan meningkatkan kedalaman sirkuit QAOA menjadi `reps=2` juga **menurunkan kinerja**. Ini menunjukkan bahwa untuk masalah ini, sirkuit yang lebih kompleks mungkin "overfit" pada sinyal prediksi yang tidak sempurna, dan `reps=1` memberikan keseimbangan yang lebih baik.
 
 ---
 
@@ -26,18 +35,5 @@ Hasil ini didapat setelah meng-upgrade prediktor dari Moving Average sederhana k
 
 ### Hasil Awal (Prediktor Moving Average)
 
-*   **Run 1:**
-    *   Optimizer Klasik: $12,938.80
-    *   Optimizer QAOA: $13,504.94
-### Grafik Performa
-
-![Perbandingan Performa dengan Prediktor ML](img/Strategy_ferformance_ClassicVSVAOA(quantum).png)
-
-
-
-*   **Run 2 (menunjukkan variabilitas):**
-    *   Optimizer Klasik: $12,938.80
-    *   Optimizer QAOA: $11,304.30
-### Grafik Performa
-
-![Perbandingan Performa dengan Prediktor ML](img/optimizer_classicVSQAOA(quantum).png)
+*   **Run 1:** Klasik: $12,938.80, QAOA: $13,504.94
+*   **Run 2:** Klasik: $12,938.80, QAOA: $11,304.30

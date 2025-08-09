@@ -2,9 +2,10 @@
 #
 import config
 from data_fetcher import build_price_df
-from predictor import predict_returns_ml # <-- UBAH INI
+from predictor import predict_returns_ml
 from optimizer import optimize_portfolio_classical, optimize_portfolio_qaoa
-from backtester import run_simple_backtest, plot_equity_curves, calculate_sharpe_ratio, calculate_max_drawdown # <-- TAMBAH INI
+# Tambahkan plot_drawdown_curves ke impor
+from backtester import run_simple_backtest, plot_equity_curves, calculate_sharpe_ratio, calculate_max_drawdown, plot_drawdown_curves
 
 def run_simulation_loop(price_data, optimizer_func):
     """Menjalankan loop simulasi historis untuk satu fungsi optimizer."""
@@ -62,11 +63,17 @@ def run_comparison_backtest():
     drawdown_q = calculate_max_drawdown(qaoa_equity)
     print(f"{'Max Drawdown (%)':<20} | {drawdown_c*100:14.2f}% | {drawdown_q*100:14.2f}%")
     
-    # Tampilkan kedua grafik pertumbuhan modal
-    plot_equity_curves({
+    # Gabungkan hasil untuk plotting
+    all_curves = {
         "Classical Optimizer": classical_equity,
         "QAOA Optimizer": qaoa_equity
-    }, title="Strategy Performance Comparison (ML Predictor)")
+    }
+
+    # Tampilkan kedua grafik pertumbuhan modal
+    plot_equity_curves(all_curves, title="Strategy Performance Comparison (ML Predictor)")
+
+    # Tampilkan grafik drawdown
+    plot_drawdown_curves(all_curves, title="Strategy Drawdown Comparison (ML Predictor)")
 
 if __name__ == "__main__":
     run_comparison_backtest()
