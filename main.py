@@ -18,15 +18,14 @@ def run_simulation_loop(price_data, optimizer_func, is_qaoa=False):
         historical_slice = price_data.iloc[:i]
         predictions = predict_returns_ml(historical_slice) 
         
-        # --- LOGIKA DIPERBAIKI ---
         if is_qaoa:
-            # Pilih 3 aset teratas berdasarkan skor prediksi AI
             top_n_preds = predictions.nlargest(3)
-            # Hapus kondisi 'if', biarkan optimizer yang memutuskan
-            chosen_assets, _ = optimizer_func(top_n_preds)
-        else: # Logika untuk strategi klasik
-            # Hapus kondisi 'if', biarkan optimizer yang memutuskan
-            chosen_assets, _ = optimizer_func(predictions)
+            # Kirim data harga yang relevan (hanya untuk top 3 aset) ke optimizer
+            relevant_prices = historical_slice[top_n_preds.index]
+            chosen_assets, _ = optimizer_func(top_n_preds, relevant_prices)
+        else:
+            # Kirim semua data harga historis ke optimizer
+            chosen_assets, _ = optimizer_func(predictions, historical_slice)
 
         current_date = price_data.index[i-1]
         daily_choices[current_date] = chosen_assets
