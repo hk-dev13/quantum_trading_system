@@ -6,43 +6,43 @@ from qiskit_algorithms.optimizers import COBYLA
 from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_algorithms.minimum_eigensolvers import NumPyMinimumEigensolver
 
-def _create_objective(predictions):
+def _create_objective(predictions, price_data):
     """
-    Membuat fungsi objektif yang menggabungkan return dan risiko.
+    Membuat fungsi objektif Markowitz (return vs risiko).
     Return: Skor prediksi (mu).
-    Risiko: Varians dari prediksi (sebagai diagonal dari matriks kovarians).
+    Risiko: Matriks kovarians dari return historis (Sigma).
     q: Faktor penyeimbang antara return dan risiko.
     """
     mu = predictions.values
     
-    # Model risiko sederhana: asumsikan tidak ada korelasi,
-    # risiko adalah kebalikan dari skor prediksi.
-    # Semakin tinggi skor, semakin rendah risiko yang diasumsikan.
-    # Ini adalah proxy, bukan kovarians statistik.
-    sigma = np.diag(1 / (np.abs(mu) + 1e-6)) # Matriks diagonal risiko
+    # Model risiko canggih: Matriks Kovarians Historis
+    returns = price_data[predictions.index].pct_change().dropna()
     
-    # UBAH FAKTOR RISIKO:
-    # Beri bobot lebih pada return (80%) daripada risiko (20%).
-    # Ini akan membuat sistem lebih berani mengambil posisi.
-    q = 0.8
+    # Gunakan matriks nol jika tidak cukup data untuk menghitung kovarians
+    sigma = np.zeros((len(mu), len(mu)))
+    if len(returns) >= 2:
+        sigma = returns.cov().values
     
-    # Fungsi objektif: q * mu - (1-q) * diag(sigma)
-    # Kita ingin memaksimalkan return (mu) dan meminimalkan risiko (sigma)
+    # Kembalikan q ke 0.5 karena model risiko baru ini lebih seimbang
+    q = 0.5
+    
     linear_objective = q * mu
-    quadratic_objective = -1 * (1 - q) * sigma # Diberi tanda negatif karena kita memaksimalkan
+    # Bagian kuadratik dari objektif Markowitz
+    quadratic_objective = (1 - q) * sigma
     
     return linear_objective, quadratic_objective
 
-def optimize_portfolio_qaoa(predictions):
-    """Optimasi portofolio menggunakan QAOA dengan objektif return-vs-risiko."""
+def optimize_portfolio_qaoa(predictions, price_data):
+    """Optimasi portofolio menggunakan QAOA dengan objektif Markowitz."""
     assets = predictions.index.tolist()
     n_assets = len(assets)
     
-    linear_obj, quadratic_obj = _create_objective(predictions)
+    linear_obj, quadratic_obj = _create_objective(predictions, price_data)
 
     qp = QuadraticProgram("PortfolioOptimization")
     qp.binary_var_list(n_assets, name="x")
-    qp.maximize(linear=linear_obj, quadratic=quadratic_obj)
+    # Kita memaksimalkan (Return - Risiko). Karena fungsi maximize, kita gunakan -quadratic_obj.
+    qp.maximize(linear=linear_obj, quadratic=-quadratic_obj)
     
     sampler = AerSampler()
     optimizer = COBYLA()
@@ -56,16 +56,17 @@ def optimize_portfolio_qaoa(predictions):
     
     return chosen_assets, result.fval
 
-def optimize_portfolio_classical(predictions):
-    """Optimasi portofolio klasik dengan objektif return-vs-risiko."""
+def optimize_portfolio_classical(predictions, price_data):
+    """Optimasi portofolio klasik dengan objektif Markowitz."""
     assets = predictions.index.tolist()
     n_assets = len(assets)
 
-    linear_obj, quadratic_obj = _create_objective(predictions)
+    linear_obj, quadratic_obj = _create_objective(predictions, price_data)
 
     qp = QuadraticProgram("PortfolioOptimization")
     qp.binary_var_list(n_assets, name="x")
-    qp.maximize(linear=linear_obj, quadratic=quadratic_obj)
+    # Kita memaksimalkan (Return - Risiko). Karena fungsi maximize, kita gunakan -quadratic_obj.
+    qp.maximize(linear=linear_obj, quadratic=-quadratic_obj)
     
     optimizer_classical = MinimumEigenOptimizer(NumPyMinimumEigensolver())
     result = optimizer_classical.solve(qp)
