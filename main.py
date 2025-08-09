@@ -18,21 +18,15 @@ def run_simulation_loop(price_data, optimizer_func, is_qaoa=False):
         historical_slice = price_data.iloc[:i]
         predictions = predict_returns_ml(historical_slice) 
         
-        # --- LOGIKA BARU UNTUK STRATEGI HIBRID ---
+        # --- LOGIKA DIPERBAIKI ---
         if is_qaoa:
             # Pilih 3 aset teratas berdasarkan skor prediksi AI
             top_n_preds = predictions.nlargest(3)
-            
-            # Hanya optimalkan jika ada sinyal positif di antara top 3
-            if (top_n_preds > 0).any():
-                chosen_assets, _ = optimizer_func(top_n_preds)
-            else:
-                chosen_assets = []
-        else: # Logika untuk strategi klasik (tetap menggunakan semua aset)
-            if (predictions > 0).any():
-                chosen_assets, _ = optimizer_func(predictions)
-            else:
-                chosen_assets = []
+            # Hapus kondisi 'if', biarkan optimizer yang memutuskan
+            chosen_assets, _ = optimizer_func(top_n_preds)
+        else: # Logika untuk strategi klasik
+            # Hapus kondisi 'if', biarkan optimizer yang memutuskan
+            chosen_assets, _ = optimizer_func(predictions)
 
         current_date = price_data.index[i-1]
         daily_choices[current_date] = chosen_assets
