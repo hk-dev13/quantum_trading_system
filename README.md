@@ -4,36 +4,35 @@ Proyek ini mengimplementasikan dan membandingkan strategi trading menggunakan op
 
 ---
 
-## Hasil Terbaik (ML Predictor, QAOA reps=1)
+## Hasil Terbaru: Strategi Hibrid dengan Model Risiko Markowitz (5 Aset)
 
-Konfigurasi berikut memberikan kinerja terbaik setelah serangkaian eksperimen, menggunakan prediktor Machine Learning (Logistic Regression) dan kedalaman sirkuit QAOA `reps=1`.
+Ini adalah hasil dari konfigurasi sistem yang paling canggih, diuji pada 5 aset (`bitcoin`, `ethereum`, `solana`, `cardano`, `dogecoin`).
+
+*   **Strategi Klasik:** Menggunakan optimizer eksak pada **semua 5 aset**.
+*   **Strategi Hibrid QAOA:** Menggunakan AI untuk memilih **3 aset teratas**, kemudian dioptimalkan dengan QAOA.
+*   **Model Objektif:** Kedua strategi menggunakan fungsi objektif modern (Markowitz) yang menyeimbangkan prediksi return (dari AI) dengan risiko (dari matriks kovarians historis).
 
 ### Metrik Kinerja (per 2025-08-09)
 
-| Metric             | Classical Optimizer | QAOA Optimizer |
-|--------------------|---------------------|----------------|
-| **Final Value**    | $15,044.21          | $15,268.51     |
-| **Sharpe Ratio**   | 2.75                | 2.83           |
-| **Max Drawdown**   | -14.76%             | -14.76%        |
+| Metric             | Classical Optimizer | Hybrid QAOA Optimizer |
+|--------------------|---------------------|-----------------------|
+| **Final Value**    | $13,069.11          | $13,353.55            |
+| **Sharpe Ratio**   | 1.82                | 1.96                  |
+| **Max Drawdown**   | -18.03%             | -18.03%               |
 
 ### Grafik Performa
 
-![Perbandingan Performa dengan Prediktor ML](img/strategy_performance_ml.png)
-![Perbandingan Drawdown dengan Prediktor ML](img/strategy_drawdown_ml.png)
+![Perbandingan Performa dengan Model Risiko Markowitz](img/strategy_performance_markowitz.png)
+![Perbandingan Drawdown dengan Model Risiko Markowitz](img/strategy_drawdown_markowitz.png)
+
+### Analisis
+Implementasi model risiko berbasis kovarians merupakan **peningkatan signifikan**. Hal ini memungkinkan kedua strategi untuk secara aktif berdagang di lingkungan yang lebih kompleks (5 aset). Strategi Hibrid AI-Kuantum menunjukkan keunggulan tipis dalam hal return akhir dan return yang disesuaikan dengan risiko (Sharpe Ratio).
 
 ---
 
-## Log Eksperimen & Temuan
+## Log Eksperimen & Temuan Terdahulu
 
-1.  **Visualisasi Risiko:** Menambahkan plot *Drawdown Over Time* memberikan wawasan visual tentang profil risiko. Terlihat bahwa meskipun QAOA memberikan return lebih tinggi, ia juga mengalami drawdown yang sedikit lebih dalam di beberapa titik.
-2.  **Feature Engineering (Momentum):** Eksperimen dengan menambahkan fitur `momentum_10` ke prediktor ML ternyata **menurunkan kinerja**. Sharpe Ratio turun dan Max Drawdown meningkat. Ini menunjukkan bahwa tidak semua fitur tambahan bersifat membantu.
-3.  **Parameter Tuning QAOA (reps=2):** Eksperimen dengan meningkatkan kedalaman sirkuit QAOA menjadi `reps=2` juga **menurunkan kinerja**. Ini menunjukkan bahwa untuk masalah ini, sirkuit yang lebih kompleks mungkin "overfit" pada sinyal prediksi yang tidak sempurna, dan `reps=1` memberikan keseimbangan yang lebih baik.
-
----
-
-## Arsip Hasil Terdahulu
-
-### Hasil Awal (Prediktor Moving Average)
-
-*   **Run 1:** Klasik: $12,938.80, QAOA: $13,504.94
-*   **Run 2:** Klasik: $12,938.80, QAOA: $11,304.30
+1.  **Hasil Terbaik (3 Aset):** Konfigurasi awal dengan 3 aset menunjukkan keunggulan QAOA yang lebih jelas (Sharpe 2.83 vs 2.75).
+2.  **Uji Skalabilitas (5 Aset, Model Sederhana):** Menambah aset menjadi 5 dengan model objektif sederhana (hanya return) menyebabkan kinerja QAOA menurun drastis, menunjukkan keterbatasannya pada masalah yang lebih kompleks.
+3.  **Filter AI (Top-N):** Menggunakan AI untuk memfilter 3 aset teratas untuk QAOA terbukti menjadi strategi hibrid yang valid untuk mengatasi masalah skalabilitas.
+4.  **Kalibrasi Risiko:** Eksperimen dengan model risiko yang terlalu sederhana atau parameter `q` yang tidak seimbang menunjukkan betapa sensitifnya sistem terhadap definisi risiko.
