@@ -1,6 +1,8 @@
 # Deskripsi: Konfigurasi utama untuk proyek.
 #
-ASSETS = ["bitcoin", "ethereum", "solana"]
+
+# Tambahkan dua aset baru untuk menguji skalabilitas
+ASSETS = ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]
 DAYS_HISTORY = 90
 MA_WINDOW = 7
 INITIAL_CAPITAL = 10000

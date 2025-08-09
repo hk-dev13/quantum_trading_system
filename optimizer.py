@@ -24,8 +24,8 @@ def optimize_portfolio_qaoa(predictions):
     # Setup QAOA
     sampler = AerSampler()
     optimizer = COBYLA()
-    # Tingkatkan kedalaman sirkuit untuk pencarian solusi yang lebih baik
-    qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=2) # <-- UBAH DI SINI
+    # Kembalikan ke reps=1 yang terbukti lebih baik
+    qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=1) # <-- UBAH KEMBALI KE 1
 
     # Buat optimizer dan selesaikan masalah
     optimizer_qaoa = MinimumEigenOptimizer(qaoa)
