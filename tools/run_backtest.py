@@ -5,15 +5,17 @@ import sys
 import os
 import pandas as pd
 
+# --- PILIH STRATEGI ---
+# Ganti nilai ini ke 'qaoa' untuk menjalankan strategi kuantum
+STRATEGY = 'qaoa'  # Pilihan: 'momentum' atau 'qaoa'
+# ---------------------
+
 # Tambahkan direktori root proyek ke dalam PYTHONPATH
-# Ini memungkinkan kita untuk mengimpor modul dari src dan configs
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-# Impor dari modul-modul yang sudah kita refaktor
+# Impor modul dasar
 from src.ingestion.data_fetcher import build_price_df
-from src.models.predictor import predict_momentum
-from src.optimizer.optimizer import choose_assets
 from src.backtest.backtester import (
     run_simple_backtest,
     plot_equity_curves,
@@ -22,36 +24,76 @@ from src.backtest.backtester import (
 )
 import configs.config as config
 
+# Impor modul spesifik strategi berdasarkan pilihan
+if STRATEGY == 'momentum':
+    from src.models.predictor import predict_momentum
+    from src.optimizer.optimizer import choose_assets
+elif STRATEGY == 'qaoa':
+    from src.models.advanced_predictor import predict_returns_ml
+    from src.optimizer.quantum_optimizer import optimize_portfolio_qaoa
+
+def run_momentum_strategy(price_df):
+    """Menjalankan alur kerja lengkap untuk strategi berbasis momentum."""
+    print("\nLangkah 2: Menjalankan prediksi momentum...")
+    momentum_df = predict_momentum(price_df, config.MA_WINDOW)
+    
+    print("\nLangkah 3: Memilih aset berdasarkan sinyal momentum...")
+    daily_choices = choose_assets(momentum_df)
+    
+    print("\nLangkah 4: Menjalankan backtest...")
+    equity_curve = run_simple_backtest(price_df, daily_choices, config.INITIAL_CAPITAL)
+    return equity_curve
+
+def run_qaoa_strategy(price_df):
+    """Menjalankan alur kerja lengkap untuk strategi berbasis QAOA."""
+    daily_choices = {}
+    # Kita mulai dari hari ke-10 untuk memastikan ada cukup data untuk ML
+    start_day = 10 
+    
+    print(f"\nLangkah 2 & 3: Memulai loop simulasi harian dari hari ke-{start_day}...")
+    for i in range(start_day, len(price_df)):
+        # Pada setiap hari, kita hanya menggunakan data historis hingga hari itu
+        historical_slice = price_df.iloc[:i]
+        current_date = price_df.index[i - 1]
+        
+        # Prediksi return menggunakan model ML
+        predictions = predict_returns_ml(historical_slice)
+        
+        # Optimalkan portofolio menggunakan QAOA
+        # Kita hanya perlu nama aset, bukan nilai fval untuk backtest
+        chosen_assets, _ = optimize_portfolio_qaoa(predictions, historical_slice)
+        
+        daily_choices[current_date] = chosen_assets
+        print(f"  - {current_date.date()}: Memilih {len(chosen_assets)} aset -> {chosen_assets}")
+
+    print("\nLangkah 4: Menjalankan backtest...")
+    equity_curve = run_simple_backtest(price_df, daily_choices, config.INITIAL_CAPITAL)
+    return equity_curve
+
 def main():
-    """
-    Fungsi utama untuk menjalankan alur kerja backtest secara lengkap.
-    """
-    print("--- Memulai Alur Kerja Backtest ---")
+    """Fungsi utama untuk menjalankan alur kerja backtest secara lengkap."""
+    print(f"--- Memulai Alur Kerja Backtest untuk Strategi: {STRATEGY.upper()} ---")
 
     # 1. PENGAMBILAN DATA
-    print(f"\nLangkah 1: Mengambil data historis untuk {len(config.ASSETS)} aset selama {config.DAYS_HISTORY} hari...")
-    price_df = build_price_df(config.ASSETS, config.DAYS_HISTORY)
-    if price_df.empty or price_df.shape[1] != len(config.ASSETS):
-        print("Gagal mengambil data yang cukup. Proses dihentikan.")
+    print(f"\nLangkah 1: Mengambil data historis...")
+    # Tambahkan 20 hari ekstra untuk pemanasan model ML jika menggunakan QAOA
+    days_to_fetch = config.DAYS_HISTORY + 20 if STRATEGY == 'qaoa' else config.DAYS_HISTORY
+    price_df = build_price_df(config.ASSETS, days_to_fetch)
+    if price_df.empty:
+        print("Gagal mengambil data. Proses dihentikan.")
         return
     print("Pengambilan data berhasil.")
 
-    # 2. PREDIKSI
-    print(f"\nLangkah 2: Menjalankan prediksi momentum dengan window {config.MA_WINDOW} hari...")
-    momentum_df = predict_momentum(price_df, config.MA_WINDOW)
-    print("Prediksi momentum selesai.")
-    
-    # 3. OPTIMISASI (Pemilihan Aset)
-    print("\nLangkah 3: Memilih aset berdasarkan sinyal momentum...")
-    daily_choices = choose_assets(momentum_df)
-    # Hapus hari-hari di mana tidak ada aset yang dipilih untuk menyederhanakan logging
-    num_decision_days = len([d for d in daily_choices.values() if d])
-    print(f"Pemilihan aset selesai. Keputusan dibuat untuk {num_decision_days} hari.")
-
-    # 4. BACKTEST
-    print(f"\nLangkah 4: Menjalankan backtest dengan modal awal ${config.INITIAL_CAPITAL:,.2f}...")
-    equity_curve = run_simple_backtest(price_df, daily_choices, config.INITIAL_CAPITAL)
-    print("Backtest selesai.")
+    # Pilih dan jalankan strategi
+    if STRATEGY == 'momentum':
+        equity_curve = run_momentum_strategy(price_df)
+        title = "Kinerja Strategi Momentum Sederhana"
+    elif STRATEGY == 'qaoa':
+        equity_curve = run_qaoa_strategy(price_df)
+        title = "Kinerja Strategi Hibrid AI-QAOA"
+    else:
+        print(f"Strategi '{STRATEGY}' tidak dikenali. Proses dihentikan.")
+        return
 
     # 5. ANALISIS & PLOTTING
     print("\nLangkah 5: Menganalisis dan memvisualisasikan hasil...")
@@ -60,20 +102,16 @@ def main():
         max_dd = calculate_max_drawdown(equity_curve)
         
         print("\n--- Hasil Akhir Backtest ---")
+        print(f"Strategi: {STRATEGY.upper()}")
         print(f"Nilai Akhir Portofolio: ${equity_curve.iloc[-1]:,.2f}")
         print(f"Sharpe Ratio Tahunan: {sharpe:.2f}")
         print(f"Maximum Drawdown: {max_dd:.2%}")
         
-        # Plotting
-        plot_equity_curves(
-            {'Momentum Strategy': equity_curve},
-            title="Kinerja Strategi Momentum Sederhana"
-        )
+        plot_equity_curves({title: equity_curve}, title=title)
     else:
         print("Equity curve kosong, tidak ada yang bisa dianalisis atau di-plot.")
         
     print("\n--- Alur Kerja Selesai ---")
-
 
 if __name__ == "__main__":
     main()

@@ -8,8 +8,8 @@ Proyek ini telah direfaktor menjadi arsitektur modular yang bersih untuk memisah
 
 -   **/src**: Berisi semua logika inti.
     -   `/ingestion`: Mengambil data harga (dengan sistem cache).
-    -   `/models`: Model prediksi (misalnya, momentum).
-    -   `/optimizer`: Logika pemilihan aset/portofolio.
+    -   `/models`: Modul untuk model prediksi (sederhana dan canggih).
+    -   `/optimizer`: Modul untuk logika pemilihan aset/portofolio (klasik dan kuantum).
     -   `/backtest`: Mesin untuk menjalankan backtest dan menghitung metrik.
 -   **/configs**: File konfigurasi terpusat untuk parameter.
 -   **/data**: Direktori untuk data mentah dan cache.
@@ -38,58 +38,53 @@ Proyek ini telah direfaktor menjadi arsitektur modular yang bersih untuk memisah
     pip install -r requirements.txt
     ```
 
-4.  **Jalankan Backtest**: Untuk menjalankan simulasi lengkap, gunakan skrip `run_backtest.py`.
+4.  **Jalankan Backtest**: Buka file `tools/run_backtest.py` dan atur variabel `STRATEGY` di bagian atas ke `'momentum'` atau `'qaoa'`. Kemudian, jalankan skrip:
     ```bash
     python tools/run_backtest.py
     ```
-    Skrip akan mengambil data (menggunakan cache jika tersedia), menjalankan prediksi, memilih aset, melakukan backtest, dan menampilkan hasil serta grafik kinerja.
 
-## Hasil Terbaru: Strategi Momentum Sederhana (5 Aset)
+## Hasil Terbaru: Perbandingan Strategi Modular
 
-Berikut adalah hasil dari backtest terbaru yang dijalankan pada 5 aset (`bitcoin`, `ethereum`, `solana`, `cardano`, `dogecoin`) menggunakan strategi momentum sederhana.
+Berikut adalah hasil dari backtest terbaru yang dijalankan pada 5 aset. Sistem sekarang dapat dengan mudah beralih antara strategi yang berbeda.
 
--   **Nilai Akhir Portofolio**: `$14,924.84`
--   **Sharpe Ratio Tahunan**: `2.63`
--   **Maximum Drawdown**: `-16.84%`
+| Metrik | Strategi Momentum | Strategi Hibrid AI-QAOA |
+| :--- | :--- | :--- |
+| **Nilai Akhir** | **`$14,924.84`** | `$13,659.58` |
+| **Sharpe Ratio** | **`2.63`** | `2.33` |
+| **Max Drawdown** | `-16.84%` | **`-16.52%`** |
 
-![Kinerja Strategi Momentum Sederhana](img/strategy_performance_momentum.png)
-
-*(Catatan: Anda mungkin perlu menghasilkan gambar baru dengan nama file yang sesuai untuk mencerminkan hasil ini.)*
+*(Catatan: Anda mungkin perlu menghasilkan gambar baru untuk setiap strategi.)*
 
 ---
 
-## Log Pengembangan: Perjalanan Refactoring ke Arsitektur Modular
+## Log Pengembangan
+
+### Evolusi 1: Perjalanan Refactoring ke Arsitektur Modular
 
 Bagian ini mendokumentasikan proses refactoring signifikan yang dilakukan pada proyek ini, mengubahnya dari serangkaian skrip menjadi arsitektur yang modular dan tangguh.
 
-### 1. Tujuan Awal: Arsitektur Baru
+-   **Tantangan & Solusi**:
+    1.  **`ModuleNotFoundError` & Lingkungan Virtual**: Diatasi dengan memanggil interpreter Python yang benar dari direktori `.venv`.
+    2.  **`ImportError` & Kode Tidak Sinkron**: Diperbaiki dengan menyelaraskan semua modul (`predictor`, `optimizer`) dengan skrip orkestrasi utama.
+    3.  **`KeyError: nan` & Penanganan Data**: Diselesaikan dengan membuat fungsi `choose_assets` lebih defensif untuk menangani baris data `NaN` di awal periode backtest.
+    4.  **`429 Too Many Requests` & Rate Limiting API**: Diatasi dengan solusi cerdas berupa **sistem caching lokal** untuk menghindari panggilan API yang berlebihan.
 
-Tujuan utamanya adalah untuk merefaktor basis kode agar lebih bersih, modular, dan mudah dikelola. Rencananya adalah memisahkan logika ke dalam direktori-direktori spesifik: `src` (untuk logika inti seperti `ingestion`, `models`, `optimizer`), `configs` (untuk konfigurasi), dan `tools` (untuk skrip yang dapat dieksekusi).
+-   **Hasil**: Proses ini menghasilkan arsitektur yang bersih dan tangguh, mampu menangani error, data yang tidak valid, dan batasan eksternal.
 
-### 2. Tantangan & Solusi
+### Evolusi 2: Arsitektur Strategi Fleksibel
 
-Dalam prosesnya, kami menghadapi serangkaian tantangan dunia nyata:
+Setelah refactoring berhasil, tujuan selanjutnya adalah untuk membuktikan kekuatan desain baru dengan mengintegrasikan kembali strategi AI-QAOA yang lebih canggih sebagai modul *plug-and-play*.
 
-*   **Tantangan 1: `ModuleNotFoundError` & Lingkungan Virtual**
-    *   **Masalah:** Skrip gagal berjalan dengan error `ModuleNotFoundError: No module named 'pandas'`, meskipun `requirements.txt` sudah ada.
-    *   **Analisis:** Skrip dijalankan menggunakan interpreter Python sistem, bukan interpreter dari lingkungan virtual proyek (`.venv`), di mana semua dependensi terinstal.
-    *   **Solusi:** Memperbaiki perintah eksekusi untuk secara eksplisit menggunakan interpreter Python dari `.venv/Scripts/python.exe`. Kami juga harus menggunakan operator `&` di PowerShell untuk menangani path yang berisi spasi (`& .\.venv\Scripts\python.exe tools/run_backtest.py`).
+-   **Tujuan:** Memodifikasi sistem agar dapat menjalankan dan membandingkan beberapa strategi kompleks hanya dengan mengubah satu baris konfigurasi.
 
-*   **Tantangan 2: `ImportError` & Kode yang Tidak Sinkron**
-    *   **Masalah:** Setelah memperbaiki masalah lingkungan, kami mendapatkan `ImportError: cannot import name 'function_name'`. Ini terjadi untuk `predict_momentum` dan `choose_assets`.
-    *   **Analisis:** Skrip orkestrasi utama (`run_backtest.py`) telah diperbarui untuk menggunakan fungsi-fungsi baru yang lebih sederhana, tetapi file-file modul (`predictor.py`, `optimizer.py`) masih berisi kode lama yang lebih kompleks dari sebelum refactoring.
-    *   **Solusi:** Menimpa isi dari `predictor.py` dan `optimizer.py` dengan versi kode baru yang telah disederhanakan agar selaras dengan arsitektur dan skrip utama.
+-   **Langkah Implementasi:**
+    1.  **Modul Optimizer Kuantum:** Logika optimisasi QAOA dipisahkan ke dalam filenya sendiri: `src/optimizer/quantum_optimizer.py`.
+    2.  **Modul Prediktor Tingkat Lanjut:** Model prediksi *machine learning* yang dibutuhkan oleh QAOA juga dipisahkan ke `src/models/advanced_predictor.py`.
+    3.  **Orkestrator Cerdas:** Skrip `tools/run_backtest.py` diubah secara signifikan. Sebuah "saklar" `STRATEGY` ditambahkan di bagian atas. Skrip sekarang secara dinamis mengimpor modul dan menjalankan alur kerja yang benar.
 
-*   **Tantangan 3: `KeyError: nan` & Penanganan Data**
-    *   **Masalah:** Alur kerja gagal saat proses optimisasi dengan `KeyError: nan`.
-    *   **Analisis:** Fungsi `predict_momentum` menghasilkan nilai `NaN` (Not a Number) untuk beberapa hari pertama (karena *rolling window*). Fungsi `choose_assets` kemudian mencoba menggunakan `NaN` sebagai kunci untuk mengakses data, yang menyebabkan error.
-    *   **Solusi:** Membuat fungsi `choose_assets` menjadi lebih "defensif". Kami menambahkan logika untuk memeriksa apakah satu baris data penuh dengan `NaN` (`.isna().all()`), dan jika ya, melompati hari tersebut tanpa membuat keputusan trading.
+-   **Tantangan & Solusi: `KeyError: 'x'` di Qiskit**
+    *   **Masalah:** Saat menjalankan strategi QAOA, kami mengalami `KeyError: 'x'` dari dalam pustaka Qiskit saat mendefinisikan *budget constraint*.
+    *   **Analisis:** Kode secara keliru mencoba memberikan batasan ke satu variabel bernama `'x'`, padahal Qiskit telah membuat banyak variabel biner (`x_0`, `x_1`, ...).
+    *   **Solusi:** Memperbaiki cara batasan didefinisikan. Alih-alih `linear={'x': np.ones(n)}`, kami menggunakan sintaks yang benar dengan memberikan array secara langsung: `linear=np.ones(n)`.
 
-*   **Tantangan 4: `429 Too Many Requests` & Rate Limiting API**
-    *   **Masalah:** Setelah semua bug kode diperbaiki, eksekusi terhenti oleh error `429 Client Error` dari CoinGecko API.
-    *   **Analisis:** Skrip membuat terlalu banyak permintaan API dalam waktu singkat, memicu mekanisme *rate limiting* dari CoinGecko. Menambahkan jeda `time.sleep(1)` sederhana pun tidak cukup.
-    *   **Solusi Cerdas:** Mengimplementasikan **sistem caching lokal**. Data yang diambil dari API sekarang disimpan dalam file `data/price_history_cache.csv`. Saat skrip dijalankan lagi, ia akan memuat data dari file cache jika data tersebut masih baru (kurang dari 24 jam), menghindari panggilan API yang tidak perlu sama sekali.
-
-### 3. Hasil Akhir: Sistem yang Tangguh
-
-Setelah mengatasi serangkaian tantangan ini, alur kerja backtest berhasil dijalankan dari awal hingga akhir. Proses ini tidak hanya menghasilkan arsitektur yang lebih bersih, tetapi juga membuktikan ketangguhannya dengan menangani error, data yang tidak valid, dan batasan eksternal secara cerdas.
+-   **Hasil Akhir:** Integrasi berhasil sepenuhnya. Sistem sekarang dapat dengan mulus beralih antara strategi sederhana dan canggih, membuktikan arsitektur modular yang baru sangat fleksibel, kuat, dan siap untuk eksperimen di masa depan.
