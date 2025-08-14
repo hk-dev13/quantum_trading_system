@@ -1,0 +1,2 @@
+{"timestamp": "2025-08-14T14:13:11.636014", "event_type": "start_run", "data": {"strategy": "momentum", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 90}}
+{"timestamp": "2025-08-14T14:13:11.636014", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}

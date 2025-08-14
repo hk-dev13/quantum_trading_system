@@ -4,13 +4,28 @@
 import sys
 import os
 import pandas as pd
-import argparse  # <-- Impor argparse
-import random    # <-- Impor random
-import numpy as np # <-- Impor numpy
+import argparse
+import random
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Tambahkan direktori root proyek ke dalam PYTHONPATH
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
+
+# --- TAMBAHKAN IMPOR MODUL DI SINI ---
+from src.config.loader import AppConfig
+from src.ingestion.data_loader import load_price_data
+from src.monitoring.logger import log_event
+from src.backtest.engine import run_backtest, calculate_metrics
+
+# Impor untuk strategi MOMENTUM
+from src.models.simple_predictor import predict_momentum
+from src.optimizer.classical_optimizer import choose_assets_classical
+
+# Impor untuk strategi QAOA (jika akan digunakan)
+# from src.optimizer.quantum_optimizer import optimize_portfolio_qaoa
+# -----------------------------------------
 
 # Impor modul dasar
 from src.ingestion.data_fetcher import build_price_df
