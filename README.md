@@ -122,8 +122,9 @@ Kedua strategi diuji pada periode data yang sama dengan `seed` yang sama untuk p
 Strategi Hibrid AI-QAOA menunjukkan kinerja yang unggul di semua metrik utama dibandingkan dengan baseline momentum yang kuat. Kemenangan ini menunjukkan keberhasilan pendekatan hibrid:
 
 1.  **Prediktor AI** (`predict_momentum`) berhasil menyediakan sinyal arah yang efektif.
+![momentum_classical](img/momentum_classical.png)
 2.  **Optimizer Kuantum** (`optimize_portfolio_qaoa`) berhasil menggunakan sinyal tersebut untuk membangun portofolio yang tidak hanya mengejar return, tetapi juga secara aktif mengelola risiko (terbukti dari Max Drawdown yang jauh lebih rendah).
-
+![hibryd_qaoa](img/strategy_hibryd_ai_qaoa.png)
 Kombinasi ini menghasilkan strategi yang lebih efisien dan lebih tangguh.
 
 ## Roadmap & Langkah Selanjutnya

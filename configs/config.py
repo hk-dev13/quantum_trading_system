@@ -12,7 +12,18 @@ MA_WINDOW = 7
 # Parameter untuk backtest
 INITIAL_CAPITAL = 10000
 
-# --- TAMBAHKAN PARAMETER SPESIFIK QAOA DI SINI ---
+# --- TAMBAHKAN PARAMETER BIAYA & SELIP DI SINI ---
+
+# Model biaya transaksi sederhana (persentase dari nilai transaksi)
+# Contoh: 0.001 merepresentasikan biaya 0.1%
+TRANSACTION_FEE_PCT = 0.001
+
+# Model selip (slippage) sederhana (persentase dari harga eksekusi)
+# Harga beli akan (1 + slippage) * harga pasar
+# Harga jual akan (1 - slippage) * harga pasar
+SLIPPAGE_PCT = 0.0005
+
+# --- Parameter Spesifik QAOA ---
 
 # Jumlah aset teratas (berdasarkan prediksi) yang akan dioptimalkan oleh QAOA.
 # Ini adalah bagian 'AI' dari strategi hibrid.
