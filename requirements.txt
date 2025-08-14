@@ -14,3 +14,6 @@ requests
 
 # Visualisasi
 matplotlib
+
+# Deep Learning
+tensorflow

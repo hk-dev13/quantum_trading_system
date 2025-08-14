@@ -29,7 +29,7 @@ if STRATEGY == 'momentum':
     from src.models.predictor import predict_momentum
     from src.optimizer.optimizer import choose_assets
 elif STRATEGY == 'qaoa':
-    from src.models.advanced_predictor import predict_returns_ml
+    from src.models.lstm_predictor import create_lstm_model, train_and_predict
     from src.optimizer.quantum_optimizer import optimize_portfolio_qaoa
 
 def run_momentum_strategy(price_df):
@@ -46,21 +46,33 @@ def run_momentum_strategy(price_df):
 
 def run_qaoa_strategy(price_df):
     """Menjalankan alur kerja lengkap untuk strategi berbasis QAOA."""
+    # Buat satu model LSTM untuk setiap aset SEBELUM loop
+    print("\nLangkah 2: Membuat model LSTM untuk setiap aset...")
+    models = {asset: create_lstm_model() for asset in price_df.columns}
+    print("Model berhasil dibuat.")
+
     daily_choices = {}
-    # Kita mulai dari hari ke-10 untuk memastikan ada cukup data untuk ML
-    start_day = 10 
+    start_day = 15  # Perlu lebih banyak data untuk pemanasan LSTM
     
-    print(f"\nLangkah 2 & 3: Memulai loop simulasi harian dari hari ke-{start_day}...")
+    print(f"\nLangkah 3: Memulai loop simulasi harian dari hari ke-{start_day}...")
     for i in range(start_day, len(price_df)):
-        # Pada setiap hari, kita hanya menggunakan data historis hingga hari itu
         historical_slice = price_df.iloc[:i]
         current_date = price_df.index[i - 1]
         
-        # Prediksi return menggunakan model ML
-        predictions = predict_returns_ml(historical_slice)
+        # Latih model dan buat prediksi untuk setiap aset
+        predictions = {}
+        for asset in price_df.columns:
+            model = models[asset]
+            asset_history = historical_slice[asset]
+            # Hanya latih dan prediksi jika ada cukup data unik
+            if asset_history.nunique() > 1:
+                predictions[asset] = train_and_predict(model, asset_history)
+            else:
+                predictions[asset] = 0 # Prediksi netral jika data tidak beragam
+        
+        predictions = pd.Series(predictions)
         
         # Optimalkan portofolio menggunakan QAOA
-        # Kita hanya perlu nama aset, bukan nilai fval untuk backtest
         chosen_assets, _ = optimize_portfolio_qaoa(predictions, historical_slice)
         
         daily_choices[current_date] = chosen_assets
