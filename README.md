@@ -48,6 +48,43 @@ Proyek ini telah direfaktor menjadi arsitektur modular yang bersih untuk memisah
 
 ## Log Pengembangan
 
+## Roadmap Optimal (Ringkasan Praktis)
+
+Roadmap ini merangkum tahapan dari laboratorium riset menuju pra-produksi hingga siap enterprise. Detail lengkap tersimpan di img/Roadmap_Optimal.txt. Di README ini disajikan ringkasan operasional yang actionable.
+
+- Phase A — Foundation (Safe MVP)
+  - Tujuan: pipeline end-to-end yang stabil & deterministik (data → predict → optimize → backtest → logs).
+  - Deliverables: robust ingestion+schema registry+cache, momentum baseline, deterministic backtest, run_log.jsonl, QAOA simulator + classical fallback, manual execution UI.
+  - Gates: reproducible backtest (given seed), no-NaN crashes, ingestion success ≥ target, run_log berisi konteks lengkap.
+
+- Phase B — Robustness & Observability
+  - Tujuan: sistem tahan gangguan, ter-instrument penuh, safety gates aktif.
+  - Deliverables: OTEL traces, Prometheus metrics + Alertmanager, Grafana dashboards; circuit breakers; shadow mode.
+  - Gates: canary+metric gates memicu rollback; shadow run menghasilkan log & PnL compare tanpa order.
+
+- Phase C — Controlled Automation & Governance
+  - Deliverables: auto-patch agent (PR-only), CI diperluas (static, unit, deterministic backtest, walk-forward, property tests), OPA policy gates, human-in-loop approvals + signed artifacts.
+  - Gates: setiap PR auto-patch menyertakan artifacts & approval; PR yang melonggarkan risiko otomatis gagal.
+
+- Phase D — Quantum Integration & Hybrid Ops
+  - Deliverables: QPU scheduler + cost-aware planner; hybrid orchestration (AI filter → top-N → QAOA → fallback); benchmark suite dengan uji signifikansi; shadowed quantum decisions.
+  - Gates: QAOA menunjukkan peningkatan signifikan secara statistik pada skenario tertentu; fallback aktif saat latency/noise > threshold.
+
+- Phase E — Productize & Enterprise
+  - Deliverables: Enterprise API (multi-tenant, quota), SLA tiers & billing, auditability & compliance pack (immutable logs, model cards), opsional SOC2/ISO docs.
+  - Gates: siap melayani sandbox customers dengan signed run reports; internal audit lulus.
+
+Cross-cutting: multi-frequency data, feature set kaya (MA, vol, RSI, MACD, sentiment, orderbook), schema versioning; backtest & evaluasi deterministik + walk-forward + market-impact sim + property tests + uji statistik; safety guards & kill-switch; CI/CD berlapis + OPA; observability (OTEL, Prometheus, dashboards).
+
+Prioritized Next Actions (siap dikerjakan sekarang)
+- Tambahkan run_log.jsonl (DONE) dan lengkapi fields: features_version, seed, optimizer_meta.
+- Implement deterministic --seed di tools/run_backtest.py dan verifikasi reproducibility.
+- Tambah parameter slippage & fee di backtest, simpan artifacts.
+- Instrument minimal metrics (prediction_latency_ms, qaoa_latency_ms, estimated_return) dan expose endpoint Prometheus.
+- Uji fallback solver path: simulasi kegagalan QAOA → sistem tetap berjalan.
+- Setup CI minimal (unit + deterministic backtest) mengunggah artifacts.
+- Tambah shadow-mode flag untuk menjalankan strategi tanpa eksekusi order.
+
 ### Evolusi 1: Refactoring ke Arsitektur Modular
 -   **Tantangan**: `ModuleNotFoundError`, `ImportError`, `KeyError: nan`, `429 Too Many Requests`.
 -   **Solusi**: Memperbaiki path lingkungan virtual, menyelaraskan modul, menambahkan penanganan NaN, dan mengimplementasikan sistem caching.
