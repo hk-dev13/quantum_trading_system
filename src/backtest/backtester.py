@@ -4,90 +4,114 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def calculate_sharpe_ratio(portfolio_values, risk_free_rate=0.02):
-    """Menghitung Sharpe Ratio tahunan dari nilai portofolio harian."""
-    daily_returns = portfolio_values.pct_change().dropna()
-    if daily_returns.empty or daily_returns.std() == 0:
-        return 0.0
-    excess_returns = daily_returns - risk_free_rate / 252
-    sharpe_ratio = excess_returns.mean() / excess_returns.std()
-    return sharpe_ratio * np.sqrt(252)
-
-def calculate_max_drawdown(portfolio_values):
-    """Menghitung Maximum Drawdown dari nilai portofolio harian."""
-    rolling_max = portfolio_values.cummax()
-    daily_drawdown = (portfolio_values - rolling_max) / rolling_max
-    return daily_drawdown.min()
-
-def run_simple_backtest(price_df, daily_choices, initial_capital):
+def run_simple_backtest(price_df, daily_choices, initial_capital, config_module):
     """
-    Menjalankan backtest sederhana.
-    
-    Args:
-        price_df: DataFrame harga historis lengkap.
-        daily_choices: Dictionary {tanggal: [aset_terpilih]}.
-        initial_capital: Modal awal.
-        
-    Returns:
-        Series pandas yang berisi nilai portofolio dari waktu ke waktu (equity curve).
+    Menjalankan simulasi backtest sederhana dengan memperhitungkan biaya dan selip.
     """
-    capital = initial_capital
-    portfolio_value = pd.Series(index=price_df.index, dtype=float)
-    portfolio_value.iloc[0] = capital
+    cash = initial_capital
+    positions = {asset: 0.0 for asset in price_df.columns}
+    portfolio_history = []
     
-    # Asumsikan kita memegang aset dari hari t ke t+1
-    for i in range(1, len(price_df)):
-        prev_day = price_df.index[i-1]
-        current_day = price_df.index[i]
+    # Variabel untuk melacak biaya
+    total_fees = 0.0
+    total_slippage_cost = 0.0
+    trade_count = 0
+
+    for date, target_assets in daily_choices.items():
+        # Hitung nilai portofolio saat ini sebelum ada aksi
+        current_portfolio_value = cash
+        for asset, quantity in positions.items():
+            current_portfolio_value += quantity * price_df.loc[date, asset]
+        portfolio_history.append({'date': date, 'value': current_portfolio_value})
+
+        # --- Logika Rebalancing ---
+        current_assets = {asset for asset, qty in positions.items() if qty > 0}
         
-        chosen_assets = daily_choices.get(prev_day, [])
-        
-        if not chosen_assets:
-            portfolio_value[current_day] = portfolio_value[prev_day]
-            continue
+        # Jual aset yang tidak lagi ada di target
+        for asset in current_assets - set(target_assets):
+            price = price_df.loc[date, asset]
+            sell_price = price * (1 - config_module.SLIPPAGE_PCT)
+            slippage_cost = positions[asset] * (price - sell_price)
             
-        prev_prices = price_df.loc[prev_day, chosen_assets]
-        current_prices = price_df.loc[current_day, chosen_assets]
-        
-        returns = (current_prices - prev_prices) / prev_prices.replace(0, np.nan)
-        daily_return = returns.mean(skipna=True)
-        
-        if pd.isna(daily_return):
-            daily_return = 0
-        
-        portfolio_value[current_day] = portfolio_value[prev_day] * (1 + daily_return)
+            proceeds = positions[asset] * sell_price
+            fee = proceeds * config_module.TRANSACTION_FEE_PCT
+            
+            cash += proceeds - fee
+            total_fees += fee
+            total_slippage_cost += slippage_cost
+            positions[asset] = 0.0
+            trade_count += 1
 
-    return portfolio_value.dropna()
+        # Beli aset baru atau sesuaikan posisi
+        if target_assets:
+            cash_per_asset = cash / len(target_assets)
+            for asset in target_assets:
+                if asset not in current_assets: # Hanya beli jika ini adalah posisi baru
+                    price = price_df.loc[date, asset]
+                    buy_price = price * (1 + config_module.SLIPPAGE_PCT)
+                    slippage_cost = cash_per_asset / buy_price * (buy_price - price)
+                    
+                    fee = cash_per_asset * config_module.TRANSACTION_FEE_PCT
+                    
+                    quantity_to_buy = (cash_per_asset - fee) / buy_price
+                    positions[asset] = quantity_to_buy
+                    cash -= cash_per_asset # Kurangi cash yang dialokasikan
+                    
+                    total_fees += fee
+                    total_slippage_cost += slippage_cost
+                    trade_count += 1
 
-def plot_equity_curves(equity_curves, title='Strategy Performance Comparison'):
-    """Membuat plot beberapa equity curve pada satu grafik."""
-    plt.figure(figsize=(12, 6))
-    for label, curve in equity_curves.items():
-        curve.plot(label=label)
+    equity_curve = pd.DataFrame(portfolio_history).set_index('date')
     
-    plt.title(title)
-    plt.xlabel('Date')
-    plt.ylabel('Portfolio Value ($)')
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-def plot_drawdown_curves(equity_curves, title='Strategy Drawdown Over Time'):
-    """Membuat plot drawdown dari waktu ke waktu untuk setiap strategi."""
-    plt.figure(figsize=(12, 6))
-    for label, curve in equity_curves.items():
-        # Hitung drawdown harian
-        rolling_max = curve.cummax()
-        daily_drawdown = (curve - rolling_max) / rolling_max
-        
-        # Plot drawdown (dikalikan 100 untuk persentase)
-        (daily_drawdown * 100).plot(label=label)
+    trade_stats = {
+        "total_trades": trade_count,
+        "total_fees_paid": total_fees,
+        "total_slippage_cost": total_slippage_cost
+    }
     
+    return equity_curve, trade_stats
+
+def calculate_metrics(equity_curve):
+    """Menghitung metrik kinerja utama dari equity curve."""
+    if equity_curve.empty or len(equity_curve) < 2:
+        return {
+            "Final Value ($)": 0, "Total Return (%)": 0,
+            "Sharpe Ratio": 0, "Max Drawdown (%)": 0
+        }
+    
+    returns = equity_curve['value'].pct_change().dropna()
+    
+    # Sharpe Ratio
+    sharpe_ratio = 0
+    if returns.std() > 0:
+        sharpe_ratio = np.sqrt(252) * returns.mean() / returns.std()
+
+    # Max Drawdown
+    cumulative = (1 + returns).cumprod()
+    running_max = cumulative.cummax()
+    drawdown = (cumulative - running_max) / running_max
+    max_drawdown = drawdown.min()
+    
+    metrics = {
+        "Final Value ($)": round(equity_curve['value'].iloc[-1], 2),
+        "Total Return (%)": round((equity_curve['value'].iloc[-1] / equity_curve['value'].iloc[0] - 1) * 100, 2),
+        "Sharpe Ratio": round(sharpe_ratio, 2),
+        "Max Drawdown (%)": round(max_drawdown * 100, 2)
+    }
+    return metrics
+
+def plot_equity_curve(equity_curve, title, output_path=None):
+    """Membuat plot equity curve dan menyimpannya jika path diberikan."""
+    plt.figure(figsize=(14, 7))
+    plt.plot(equity_curve.index, equity_curve['value'], label=title)
     plt.title(title)
-    plt.xlabel('Date')
-    plt.ylabel('Drawdown (%)')
-    plt.grid(True)
+    plt.xlabel("Date")
+    plt.ylabel("Portfolio Value ($)")
     plt.legend()
-    plt.tight_layout()
+    plt.grid(True)
+    
+    if output_path:
+        plt.savefig(output_path)
+        print(f"Grafik disimpan di: {output_path}")
+    
     plt.show()
