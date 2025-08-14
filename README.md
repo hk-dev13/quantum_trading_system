@@ -1,64 +1,57 @@
-# Quantum Trading System
+# Sistem Trading Kuantum & Klasik
 
-Proyek ini mengimplementasikan dan membandingkan strategi trading menggunakan optimizer klasik dan kuantum (QAOA) untuk pemilihan aset kripto.
+Proyek ini mengimplementasikan, menguji, dan membandingkan strategi trading algoritmik menggunakan arsitektur modular di Python. Sistem ini dirancang untuk fleksibilitas, memungkinkan perbandingan berbagai model prediksi dan metode optimisasi (baik klasik maupun kuantum).
 
----
+## Arsitektur Proyek
 
-## Hasil Terbaru: Strategi Hibrid dengan Model Risiko Markowitz (5 Aset)
+Proyek ini telah direfaktor menjadi arsitektur modular yang bersih untuk memisahkan berbagai komponen logis:
 
-Ini adalah hasil dari konfigurasi sistem yang paling canggih, diuji pada 5 aset (`bitcoin`, `ethereum`, `solana`, `cardano`, `dogecoin`).
+-   **/src**: Berisi semua logika inti.
+    -   `/ingestion`: Mengambil data harga (dengan sistem cache).
+    -   `/models`: Model prediksi (misalnya, momentum).
+    -   `/optimizer`: Logika pemilihan aset/portofolio.
+    -   `/backtest`: Mesin untuk menjalankan backtest dan menghitung metrik.
+-   **/configs**: File konfigurasi terpusat untuk parameter.
+-   **/data**: Direktori untuk data mentah dan cache.
+-   **/tools**: Skrip untuk menjalankan alur kerja, seperti `run_backtest.py`.
+-   **/.venv**: Lingkungan virtual Python untuk mengelola dependensi.
 
-*   **Strategi Klasik:** Menggunakan optimizer eksak pada **semua 5 aset**.
-*   **Strategi Hibrid QAOA:** Menggunakan AI untuk memilih **3 aset teratas**, kemudian dioptimalkan dengan QAOA.
-*   **Model Objektif:** Kedua strategi menggunakan fungsi objektif modern (Markowitz) yang menyeimbangkan prediksi return (dari AI) dengan risiko (dari matriks kovarians historis).
+## Cara Menjalankan
 
-### Metrik Kinerja (per 2025-08-10)
+1.  **Siapkan Lingkungan**: Pastikan Anda memiliki Python dan telah membuat lingkungan virtual.
+    ```bash
+    python -m venv .venv
+    ```
 
-| Metric             | Classical Optimizer | Hybrid QAOA Optimizer |
-|--------------------|---------------------|-----------------------|
-| **Final Value**    | $13,069.11          | $13,353.55            |
-| **Sharpe Ratio**   | 1.82                | 1.96                  |
-| **Max Drawdown**   | -18.03%             | -18.03%               |
+2.  **Aktifkan Lingkungan**:
+    -   **Windows (PowerShell)**:
+        ```powershell
+        .\.venv\Scripts\Activate.ps1
+        ```
+    -   **macOS/Linux**:
+        ```bash
+        source .venv/bin/activate
+        ```
 
-### Grafik Performa
+3.  **Instal Dependensi**:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-![Perbandingan Performa dengan Model Risiko Markowitz](img/strategy_performance_markowitz.png)
-![Perbandingan Drawdown dengan Model Risiko Markowitz](img/strategy_drawdown_markowitz.png)
+4.  **Jalankan Backtest**: Untuk menjalankan simulasi lengkap, gunakan skrip `run_backtest.py`.
+    ```bash
+    python tools/run_backtest.py
+    ```
+    Skrip akan mengambil data (menggunakan cache jika tersedia), menjalankan prediksi, memilih aset, melakukan backtest, dan menampilkan hasil serta grafik kinerja.
 
-### Analisis
-Implementasi model risiko berbasis kovarians merupakan **peningkatan signifikan**. Hal ini memungkinkan kedua strategi untuk secara aktif berdagang di lingkungan yang lebih kompleks (5 aset). Strategi Hibrid AI-Kuantum menunjukkan keunggulan tipis dalam hal return akhir dan return yang disesuaikan dengan risiko (Sharpe Ratio).
+## Hasil Terbaru: Strategi Momentum Sederhana (5 Aset)
 
----
+Berikut adalah hasil dari backtest terbaru yang dijalankan pada 5 aset (`bitcoin`, `ethereum`, `solana`, `cardano`, `dogecoin`) menggunakan strategi momentum sederhana.
 
-## Timeline Proyek & Evolusi Strategi
+-   **Nilai Akhir Portofolio**: `$14,924.84`
+-   **Sharpe Ratio Tahunan**: `2.63`
+-   **Maximum Drawdown**: `-16.84%`
 
-Berikut adalah rekam jejak evolusi proyek ini dari konsep awal hingga kondisi saat ini.
+![Kinerja Strategi Momentum Sederhana](img/strategy_performance_momentum.png)
 
-### Fase 1: Konsep Awal & Implementasi Dasar
-*   **Tujuan:** Membangun kerangka kerja dasar untuk membandingkan optimizer klasik dan kuantum.
-*   **Prediktor:** Sinyal sederhana berbasis *Moving Average Crossover*.
-*   **Optimizer:** QAOA vs Klasik, dengan fungsi objektif yang hanya memaksimalkan prediksi return.
-*   **Aset:** 3 Aset (`bitcoin`, `ethereum`, `solana`).
-*   **Temuan:** QAOA menunjukkan potensi awal tetapi hasilnya tidak stabil, menyoroti pentingnya kualitas sinyal input.
-
-### Fase 2: Peningkatan Prediktor & Analisis Risiko
-*   **Tujuan:** Meningkatkan kualitas sinyal dan menambahkan metrik risiko.
-*   **Tindakan:**
-    1.  Mengganti prediktor *Moving Average* dengan model *Machine Learning* (Logistic Regression).
-    2.  Menambahkan visualisasi *Drawdown* untuk menganalisis risiko.
-*   **Temuan:** Kinerja sistem meningkat secara dramatis. Strategi QAOA secara konsisten mengungguli strategi klasik dengan selisih tipis, menghasilkan **Sharpe Ratio 2.83**. Ini menjadi *baseline* emas untuk perbandingan selanjutnya.
-
-### Fase 3: Uji Stres & Skalabilitas
-*   **Tujuan:** Menguji bagaimana sistem menangani kompleksitas yang lebih tinggi.
-*   **Tindakan:** Menambah jumlah aset dari 3 menjadi 5.
-*   **Temuan:** Kinerja QAOA **menurun drastis**, sementara optimizer klasik tetap tangguh. Ini membuktikan bahwa sirkuit QAOA yang sederhana (`reps=1`) kesulitan menemukan solusi yang baik di ruang pencarian yang lebih besar.
-
-### Fase 4: Strategi Hibrid AI-Kuantum
-*   **Tujuan:** Mengatasi masalah skalabilitas QAOA.
-*   **Tindakan:** Mengimplementasikan pendekatan hibrid: AI digunakan untuk **memfilter 3 kandidat aset teratas**, kemudian QAOA dijalankan pada subset yang lebih kecil ini.
-*   **Temuan:** Pendekatan ini berhasil **meningkatkan kembali kinerja QAOA**, membuktikan validitas strategi hibrid untuk mengelola kompleksitas.
-
-### Fase 5: Model Risiko Canggih (Markowitz)
-*   **Tujuan:** Membuat keputusan investasi yang lebih cerdas dengan menyeimbangkan return dan risiko secara formal.
-*   **Tindakan:** Mengganti fungsi objektif sederhana dengan **model portofolio Markowitz**, yang memasukkan matriks kovarians historis sebagai representasi risiko.
-*   **Temuan:** Ini adalah **peningkatan paling signifikan pada logika inti sistem**. Kedua strategi menjadi jauh lebih baik dalam menavigasi pasar dengan 5 aset. Strategi Hibrid AI-Kuantum kembali menunjukkan keunggulan tipis, mencapai hasil yang terdokumentasi di bagian atas README ini.
+*(Catatan: Anda mungkin perlu menghasilkan gambar baru dengan nama file yang sesuai untuk mencerminkan hasil ini.)*
