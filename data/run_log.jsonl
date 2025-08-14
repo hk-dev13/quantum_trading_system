@@ -1,2 +1,23 @@
 {"timestamp": "2025-08-14T14:13:11.636014", "event_type": "start_run", "data": {"strategy": "momentum", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 90}}
 {"timestamp": "2025-08-14T14:13:11.636014", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}
+{"timestamp": "2025-08-14T15:11:00.250715", "event_type": "start_run", "data": {"strategy": "momentum", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 90}}
+{"timestamp": "2025-08-14T15:11:00.263197", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}
+{"timestamp": "2025-08-14T15:11:00.270755", "event_type": "prediction_ready", "data": {"model": "momentum", "last_index": "2025-08-14 00:00:00"}}
+{"timestamp": "2025-08-14T15:11:00.444224", "event_type": "backtest_result", "data": {"strategy": "momentum", "final_value": 14924.843212971764, "sharpe_ratio": 2.6277441712358156, "max_drawdown": -0.16837990627840296}}
+{"timestamp": "2025-08-14T15:12:09.490319", "event_type": "end_run", "data": {"strategy": "momentum"}}
+{"timestamp": "2025-08-14T15:13:31.017231", "event_type": "start_run", "data": {"strategy": "qaoa", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 110}}
+{"timestamp": "2025-08-14T15:13:31.018234", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}
+{"timestamp": "2025-08-14T15:13:31.018234", "event_type": "warning", "data": {"reason": "qaoa_not_implemented"}}
+{"timestamp": "2025-08-14T15:13:31.034263", "event_type": "warning", "data": {"reason": "empty_equity_curve", "strategy": "qaoa"}}
+{"timestamp": "2025-08-14T15:13:31.035094", "event_type": "end_run", "data": {"strategy": "qaoa"}}
+{"timestamp": "2025-08-14T15:21:36.046433", "event_type": "start_run", "data": {"strategy": "qaoa", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 110}}
+{"timestamp": "2025-08-14T15:21:36.083240", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}
+{"timestamp": "2025-08-14T15:21:36.090166", "event_type": "prediction_ready", "data": {"model": "momentum_for_qaoa"}}
+{"timestamp": "2025-08-14T15:24:00.614467", "event_type": "start_run", "data": {"strategy": "qaoa", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 110}}
+{"timestamp": "2025-08-14T15:24:00.627395", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}
+{"timestamp": "2025-08-14T15:24:00.633107", "event_type": "prediction_ready", "data": {"model": "momentum_for_qaoa"}}
+{"timestamp": "2025-08-14T15:26:37.194119", "event_type": "start_run", "data": {"strategy": "qaoa", "seed": 42, "assets": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"], "days_to_fetch": 110}}
+{"timestamp": "2025-08-14T15:26:37.194119", "event_type": "data_fetched", "data": {"rows": 90, "cols": ["bitcoin", "ethereum", "solana", "cardano", "dogecoin"]}}
+{"timestamp": "2025-08-14T15:26:37.219955", "event_type": "prediction_ready", "data": {"model": "momentum_for_qaoa"}}
+{"timestamp": "2025-08-14T15:27:25.584485", "event_type": "backtest_result", "data": {"strategy": "qaoa", "final_value": 15226.12783545223, "sharpe_ratio": 3.1415473902412114, "max_drawdown": -0.11537045241604038}}
+{"timestamp": "2025-08-14T15:28:16.277986", "event_type": "end_run", "data": {"strategy": "qaoa"}}

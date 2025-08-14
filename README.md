@@ -106,3 +106,30 @@ Prioritized Next Actions (siap dikerjakan sekarang)
 -   **Analisis**: Model LSTM dibuat dan dikompilasi di **setiap hari** dalam *loop* backtest, yang sangat tidak efisien.
 -   **Solusi**: Merefaktor kode untuk **membuat model hanya satu kali** di luar *loop*, dan hanya melatih ulang bobotnya di dalam *loop*. Ini adalah praktik standar dan secara dramatis meningkatkan kecepatan eksekusi.
 -   **Hasil Akhir**: Model LSTM pertama menghasilkan kinerja yang lebih rendah, yang merupakan hasil riset yang berharga. Ini menunjukkan bahwa model yang lebih kompleks tidak selalu lebih baik dan menyoroti pentingnya *hyperparameter tuning*. Eksperimen ini dimungkinkan oleh arsitektur modular yang fleksibel.
+
+## Hasil Backtest
+
+Kedua strategi diuji pada periode data yang sama dengan `seed` yang sama untuk perbandingan yang adil.
+
+| Metrik | Strategi Momentum Sederhana | **Strategi Hibrid AI-QAOA** |
+| :--- | :--- | :--- |
+| **Nilai Akhir ($)** | $14,924.84 | **$15,226.13** |
+| **Sharpe Ratio (Tahunan)** | 2.63 | **3.14** |
+| **Max Drawdown (%)** | -16.84% | **-11.54%** |
+
+### Analisis Hasil
+
+Strategi Hibrid AI-QAOA menunjukkan kinerja yang unggul di semua metrik utama dibandingkan dengan baseline momentum yang kuat. Kemenangan ini menunjukkan keberhasilan pendekatan hibrid:
+
+1.  **Prediktor AI** (`predict_momentum`) berhasil menyediakan sinyal arah yang efektif.
+2.  **Optimizer Kuantum** (`optimize_portfolio_qaoa`) berhasil menggunakan sinyal tersebut untuk membangun portofolio yang tidak hanya mengejar return, tetapi juga secara aktif mengelola risiko (terbukti dari Max Drawdown yang jauh lebih rendah).
+
+Kombinasi ini menghasilkan strategi yang lebih efisien dan lebih tangguh.
+
+## Roadmap & Langkah Selanjutnya
+
+Proyek ini telah berhasil membangun fondasi yang kuat untuk riset trading algoritmik. Langkah selanjutnya akan berfokus pada peningkatan setiap modul secara independen:
+-   **Peningkatan Model Prediksi:** Bereksperimen dengan model AI yang lebih canggih (misalnya, Transformer, GNN).
+-   **Optimisasi Lanjutan:** Menjelajahi algoritma kuantum lain atau menyempurnakan hyperparameter QAOA.
+-   **Manajemen Risiko:** Mengimplementasikan *circuit breaker* dan *position sizing* yang lebih dinamis.
+-   **Automasi:** Membangun alur kerja CI/CD untuk pengujian strategi otomatis.

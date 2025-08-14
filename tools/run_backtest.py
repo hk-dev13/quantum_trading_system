@@ -13,92 +13,81 @@ import matplotlib.pyplot as plt
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-# --- TAMBAHKAN IMPOR MODUL DI SINI ---
-from src.config.loader import AppConfig
-from src.ingestion.data_loader import load_price_data
-from src.monitoring.logger import log_event
-from src.backtest.engine import run_backtest, calculate_metrics
+# --- Impor Konfigurasi ---
+from configs import config 
 
-# Impor untuk strategi MOMENTUM
-from src.models.simple_predictor import predict_momentum
-from src.optimizer.classical_optimizer import choose_assets_classical
-
-# Impor untuk strategi QAOA (jika akan digunakan)
-# from src.optimizer.quantum_optimizer import optimize_portfolio_qaoa
-# -----------------------------------------
-
-# Impor modul dasar
+# --- Impor Modul dari 'src' ---
 from src.ingestion.data_fetcher import build_price_df
+from src.models.predictor import predict_momentum
+from src.optimizer.classical_optimizer import choose_assets_classical
+from src.optimizer.quantum_optimizer import optimize_portfolio_qaoa
 from src.backtest.backtester import (
     run_simple_backtest,
     plot_equity_curves,
     calculate_sharpe_ratio,
     calculate_max_drawdown
 )
-import configs.config as config
 from src.monitoring.logger import log_event
 
 # Impor modul spesifik strategi berdasarkan pilihan
-def run_momentum_strategy(price_df, config):
-    """Menjalankan alur kerja lengkap untuk strategi berbasis momentum."""
+def run_momentum_strategy(price_df, config_module):
+    """Menjalankan alur kerja lengkap untuk strategi momentum."""
     print("\nLangkah 2: Menjalankan prediksi momentum...")
-    momentum_df = predict_momentum(price_df, config.MA_WINDOW)
+    momentum_df = predict_momentum(price_df, config_module.MA_WINDOW)
     log_event("prediction_ready", {
         "model": "momentum",
         "last_index": str(momentum_df.index[-1]) if not momentum_df.empty else None
     })
     
     print("\nLangkah 3: Memilih aset berdasarkan sinyal momentum...")
-    daily_choices = choose_assets(momentum_df)
+    # PERBAIKAN: Gunakan nama fungsi yang benar yang diimpor
+    daily_choices = choose_assets_classical(momentum_df) 
     
     print("\nLangkah 4: Menjalankan backtest...")
-    equity_curve = run_simple_backtest(price_df, daily_choices, config.INITIAL_CAPITAL)
+    equity_curve = run_simple_backtest(price_df, daily_choices, config_module.INITIAL_CAPITAL)
     return equity_curve
 
-def run_qaoa_strategy(price_df, config):
-    """Menjalankan alur kerja lengkap untuk strategi berbasis QAOA."""
-    # Buat satu model LSTM untuk setiap aset SEBELUM loop
-    print("\nLangkah 2: Membuat model LSTM untuk setiap aset...")
-    models = {asset: create_lstm_model() for asset in price_df.columns}
-    print("Model berhasil dibuat.")
+# --- GANTI FUNGSI PLACEHOLDER INI ---
+def run_qaoa_strategy(price_df, config_module):
+    """Menjalankan alur kerja lengkap untuk strategi hibrid AI-QAOA."""
+    print("\nLangkah 2: Menjalankan prediksi (menggunakan model momentum)...")
+    momentum_df = predict_momentum(price_df, config_module.MA_WINDOW)
+    log_event("prediction_ready", {"model": "momentum_for_qaoa"})
 
+    print("\nLangkah 3: Memilih aset dengan QAOA untuk setiap hari...")
     daily_choices = {}
-    start_day = 15  # Perlu lebih banyak data untuk pemanasan LSTM
-    
-    print(f"\nLangkah 3: Memulai loop simulasi harian dari hari ke-{start_day}...")
+    # Mulai dari hari di mana kita punya cukup data momentum
+    start_day = config_module.MA_WINDOW 
     for i in range(start_day, len(price_df)):
-        historical_slice = price_df.iloc[:i]
-        current_date = price_df.index[i - 1]
+        current_date = price_df.index[i]
         
-        # Latih model dan buat prediksi untuk setiap aset
-        predictions = {}
-        for asset in price_df.columns:
-            model = models[asset]
-            asset_history = historical_slice[asset]
-            # Hanya latih dan prediksi jika ada cukup data unik
-            if asset_history.nunique() > 1:
-                predictions[asset] = train_and_predict(model, asset_history)
-            else:
-                predictions[asset] = 0 # Prediksi netral jika data tidak beragam
+        # Ambil prediksi untuk hari ini
+        todays_predictions = momentum_df.loc[current_date]
         
-        predictions = pd.Series(predictions)
+        if todays_predictions.isna().all():
+            daily_choices[current_date] = []
+            continue
+
+        # --- Logika Hibrid AI-Kuantum ---
+        # 1. Filter N kandidat teratas berdasarkan prediksi
+        top_n_preds = todays_predictions.nlargest(config_module.QAOA_TOP_N_ASSETS)
         
-        # Optimalkan portofolio menggunakan QAOA
-        chosen_assets, _ = optimize_portfolio_qaoa(predictions, historical_slice)
+        # 2. Siapkan data harga historis hanya untuk kandidat tersebut
+        historical_slice = price_df.loc[:current_date]
+        relevant_prices = historical_slice[top_n_preds.index]
         
+        # 3. Jalankan optimizer QAOA pada masalah yang lebih kecil
+        chosen_assets = optimize_portfolio_qaoa(
+            top_n_preds, 
+            relevant_prices, 
+            config_module.OBJECTIVE_Q_FACTOR
+        )
         daily_choices[current_date] = chosen_assets
-        print(f"  - {current_date.date()}: Memilih {len(chosen_assets)} aset -> {chosen_assets}")
-        # Log keputusan harian
-        log_event("daily_decision", {
-            "date": str(current_date.date()),
-            "strategy": "qaoa",
-            "chosen_assets": chosen_assets,
-            "predictions": predictions.to_dict()
-        })
 
     print("\nLangkah 4: Menjalankan backtest...")
-    equity_curve = run_simple_backtest(price_df, daily_choices, config.INITIAL_CAPITAL)
+    equity_curve = run_simple_backtest(price_df, daily_choices, config_module.INITIAL_CAPITAL)
     return equity_curve
+# ------------------------------------
 
 def main():
     """Fungsi utama untuk menjalankan alur kerja backtest secara lengkap."""

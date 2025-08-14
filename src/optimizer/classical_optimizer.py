@@ -1,6 +1,6 @@
 import pandas as pd
 
-def choose_assets(momentum_df):
+def choose_assets_classical(momentum_df):
     """Memilih aset terbaik untuk setiap hari berdasarkan sinyal momentum, dengan penanganan untuk nilai NaN."""
     daily_choices = {}
     for date, daily_momentum in momentum_df.iterrows():
