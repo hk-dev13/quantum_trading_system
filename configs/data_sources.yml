@@ -1,0 +1,37 @@
+# Data Sources Configuration
+
+sources:
+  coingecko:
+    base_url: "https://api.coingecko.com/api/v3"
+    rate_limit: 50  # requests per minute
+    timeout: 30
+    retry_attempts: 3
+    api_key: "${COINGECKO_API_KEY:}"
+    enabled: true
+    priority: 1
+    endpoints:
+      price_history: "/coins/{asset}/market_chart"
+      current_price: "/simple/price"
+      market_data: "/coins/{asset}"
+    
+  binance:
+    base_url: "https://api.binance.com/api/v3"
+    rate_limit: 1200  # requests per minute
+    timeout: 10
+    retry_attempts: 2
+    api_key: "${BINANCE_API_KEY:}"
+    enabled: true
+    priority: 2
+    endpoints:
+      klines: "/klines"
+      ticker_24hr: "/ticker/24hr"
+      ticker_price: "/ticker/price"
+    websocket:
+      base_url: "wss://stream.binance.com:9443/ws"
+      enabled: true
+
+# Fallback configuration
+fallback:
+  max_cache_age_seconds: 3600  # 1 hour
+  degraded_mode_threshold: 0.5  # 50% of sources failing
+  shadow_mode: false

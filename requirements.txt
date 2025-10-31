@@ -11,9 +11,29 @@ scikit-learn
 
 # API & Utilitas
 requests
+pyyaml  # For YAML configuration files
+redis   # For caching system
 
 # Visualisasi
 matplotlib
 
 # Deep Learning
 tensorflow
+
+# Data Validation & Quality
+jsonschema  # For data schema validation
+pydantic    # For data validation and settings management
+
+# Async & Concurrency
+aiohttp     # For async HTTP requests
+asyncio-throttle  # For rate limiting
+
+# Monitoring & Logging
+prometheus-client  # For metrics collection
+structlog   # For structured logging
+
+# Development & Testing
+pytest      # For testing
+pytest-asyncio  # For async testing
+black       # Code formatting
+flake8      # Code linting

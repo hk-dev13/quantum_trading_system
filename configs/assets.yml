@@ -1,0 +1,40 @@
+# Supported Assets Configuration
+
+supported_assets:
+  - bitcoin
+  - ethereum
+  - solana
+  - cardano
+  - dogecoin
+  - binancecoin
+  - ripple
+  - polkadot
+  - chainlink
+  - litecoin
+
+# Asset priority for optimization
+priority_assets:
+  - bitcoin
+  - ethereum
+  - solana
+
+# Default timeframes for data collection
+default_timeframes:
+  - "1h"
+  - "4h" 
+  - "1d"
+
+# Asset-specific configurations
+asset_configs:
+  bitcoin:
+    symbol: "BTC"
+    decimals: 8
+    min_trade_amount: 0.00001
+  ethereum:
+    symbol: "ETH"
+    decimals: 18
+    min_trade_amount: 0.001
+  solana:
+    symbol: "SOL"
+    decimals: 9
+    min_trade_amount: 0.01

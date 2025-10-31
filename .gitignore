@@ -3,3 +3,88 @@
 venv/
 **/venv/
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Kiro IDE
+/.kiro/
+
+# Data and Cache files
+data/
+*.csv
+*.json
+*.jsonl
+*.cache
+img/
+
+# Logs
+*.log
+logs/
+run_log.jsonl
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.key
+secrets/
+
+# API Keys and Config overrides
+configs/local.yml
+configs/production.yml
+configs/secrets.yml
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Build and Distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Model artifacts and large files
+models/
+*.pkl
+*.joblib
+*.h5
+*.pb
+
+# Quantum computing artifacts
+qiskit_cache/
+*.qasm
+data/price_history_cache.csv
