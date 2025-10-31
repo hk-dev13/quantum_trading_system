@@ -1,12 +1,50 @@
-# Python virtual environment
+# Development Environment
 .venv/
-venv/
-**/venv/
+.env
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific - these should be in public/private repos
+src/
+tests/
+tools/
+api-bridge/
+configs/
+data/
+img/
+
+# Dependencies
+requirements.txt
+poetry.lock
+package-lock.json
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Never ignore these important bridge repo files
+!docs/
+!policies/
+!.copilot_guide/
+!BRIDGE-REPO-GUIDE.md
+!MIGRATION-GUIDE.md
+!DUAL-REPO-IMPLEMENTATION-SUMMARY.md
+!code-separation-strategy.md
 
 # IDE and Editor files
 .vscode/
