@@ -58,9 +58,7 @@ class SchemaRegistry(SchemaRegistryInterface):
         self.schema_directory = Path(schema_directory)
         self._schemas: Dict[str, Dict[str, SchemaInfo]] = {}
         self._migration_cache: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
-
-        # Ensure schema directory exists
-        self.schema_directory.mkdir(parents=True, exist_ok=True)
+        self._loaded_default_schemas = False
 
         # Load all schemas on initialization
         self._load_schemas()
@@ -84,29 +82,22 @@ class SchemaRegistry(SchemaRegistryInterface):
         """
         result = ValidationResult(is_valid=True)
 
-        try:
-            schema_info = self._get_schema_info(asset_type, schema_version)
-            if not schema_info:
-                result.add_error(
-                    ValidationErrorType.SCHEMA_VIOLATION,
-                    "schema",
-                    f"Schema not found for asset type: {asset_type}, version: {schema_version}",
-                )
-                return result
+        schema_info = self._get_schema_info(asset_type, schema_version)
+        if not schema_info:
+            result.add_error(
+                ValidationErrorType.SCHEMA_VIOLATION,
+                "schema",
+                f"Schema not found for asset type: {asset_type}, version: {schema_version}",
+            )
+            result.quality_score = self._calculate_quality_score(result)
+            return result
 
+        try:
             # Perform JSON schema validation
             validate(instance=data, schema=schema_info.schema)
 
-            # Additional custom validations
+            # Additional custom validations (only if schema validation passed)
             self._perform_custom_validations(data, result, asset_type)
-
-            # Calculate quality score based on validation results
-            result.quality_score = self._calculate_quality_score(result)
-
-            logger.debug(
-                f"Schema validation completed for {asset_type} v{schema_version}: "
-                f"is_valid={result.is_valid}, quality={result.quality_score:.3f}"
-            )
 
         except JsonSchemaValidationError as e:
             result.add_error(
@@ -123,6 +114,14 @@ class SchemaRegistry(SchemaRegistryInterface):
                 f"Unexpected validation error: {str(e)}",
             )
             logger.error(f"Unexpected validation error: {str(e)}", exc_info=True)
+
+        # Calculate quality score based on validation results (always)
+        result.quality_score = self._calculate_quality_score(result)
+
+        logger.debug(
+            f"Schema validation completed for {asset_type} v{schema_version}: "
+            f"is_valid={result.is_valid}, quality={result.quality_score:.3f}"
+        )
 
         return result
 
@@ -212,10 +211,8 @@ class SchemaRegistry(SchemaRegistryInterface):
 
     def _load_schemas(self) -> None:
         """Load all schema files from the schema directory."""
-        if not self.schema_directory.exists():
-            logger.warning(f"Schema directory {self.schema_directory} does not exist")
-            self._create_default_schemas()
-            return
+        # Ensure directory exists (create if not)
+        self.schema_directory.mkdir(parents=True, exist_ok=True)
 
         schema_files = list(self.schema_directory.glob("*.json"))
         if not schema_files:
@@ -223,11 +220,18 @@ class SchemaRegistry(SchemaRegistryInterface):
             self._create_default_schemas()
             return
 
+        loaded_any = False
         for schema_file in schema_files:
             try:
                 self._load_schema_file(schema_file)
+                loaded_any = True
             except Exception as e:
                 logger.error(f"Failed to load schema file {schema_file}: {e}")
+        
+        # Only create defaults if no valid schemas were loaded
+        if not loaded_any:
+            logger.info("No valid schemas found, creating default schemas")
+            self._create_default_schemas()
 
     def _load_schema_file(self, schema_file: Path) -> None:
         """Load a single schema file."""
@@ -257,6 +261,10 @@ class SchemaRegistry(SchemaRegistryInterface):
 
     def _create_default_schemas(self) -> None:
         """Create default schema files if none exist."""
+        # Avoid creating defaults multiple times
+        if self._loaded_default_schemas:
+            return
+            
         default_crypto_schema = {
             "asset_type": "cryptocurrency",
             "version": "1.0.0",
@@ -301,6 +309,7 @@ class SchemaRegistry(SchemaRegistryInterface):
 
         # Load the created schema
         self._load_schema_file(schema_file)
+        self._loaded_default_schemas = True
 
         logger.info(f"Created default cryptocurrency schema v1.0.0")
 
@@ -343,11 +352,12 @@ class SchemaRegistry(SchemaRegistryInterface):
 
     def _calculate_quality_score(self, result: ValidationResult) -> float:
         """Calculate quality score based on validation results."""
-        if not result.is_valid:
-            return 0.0
-
         # Start with perfect score
         score = 1.0
+
+        # Deduct for errors (major impact)
+        error_penalty = len(result.errors) * 0.2
+        score = max(0.0, score - error_penalty)
 
         # Deduct for warnings (minor issues)
         warning_penalty = len(result.warnings) * 0.1
