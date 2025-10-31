@@ -8,8 +8,8 @@ from qiskit_aer.primitives import Sampler as AerSampler
 
 def _create_markowitz_objective(predictions, price_data, q_factor):
     """
-    Membuat fungsi objektif Markowitz (return vs risiko).
-    q_factor sekarang diterima sebagai argumen.
+    Create Markowitz objective function (return vs risk).
+    q_factor is now accepted as an argument.
     """
     mu = predictions.values
     
@@ -26,8 +26,8 @@ def _create_markowitz_objective(predictions, price_data, q_factor):
 
 def optimize_portfolio_qaoa(predictions, price_data, q_factor):
     """
-    Optimasi portofolio menggunakan QAOA dengan objektif Markowitz.
-    Fungsi ini sekarang menerima q_factor.
+    Portfolio optimization using QAOA with Markowitz objective.
+    This function now accepts q_factor.
     """
     assets = predictions.index.tolist()
     n_assets = len(assets)

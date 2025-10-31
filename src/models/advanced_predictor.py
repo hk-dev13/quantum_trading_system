@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 def predict_returns_ml(price_df):
     """
-    Memprediksi return menggunakan model Logistic Regression sederhana.
+    Predict returns using a simple Logistic Regression model.
     """
     predictions = {}
     

@@ -1,9 +1,9 @@
 import pandas as pd
 
 def predict_momentum(price_df, window):
-    """Menghitung sinyal momentum sederhana berdasarkan Moving Average (MA)."""
-    # Hitung return harian
+    """Calculate simple momentum signal based on Moving Average (MA)."""
+    # Calculate daily returns
     returns = price_df.pct_change()
-    # Hitung MA dari return
+    # Calculate MA of returns
     momentum = returns.rolling(window=window).mean()
     return momentum

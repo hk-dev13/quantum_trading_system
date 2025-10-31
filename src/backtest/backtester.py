@@ -1,4 +1,4 @@
-# Deskripsi: Berisi fungsi untuk menjalankan backtest dan memplot hasilnya.
+# Description: Contains functions for running backtests and plotting results.
 #
 import pandas as pd
 import numpy as np
@@ -6,28 +6,28 @@ import matplotlib.pyplot as plt
 
 def run_simple_backtest(price_df, daily_choices, initial_capital, config_module):
     """
-    Menjalankan simulasi backtest sederhana dengan memperhitungkan biaya dan selip.
+    Run simple backtest simulation accounting for costs and slippage.
     """
     cash = initial_capital
     positions = {asset: 0.0 for asset in price_df.columns}
     portfolio_history = []
     
-    # Variabel untuk melacak biaya
+    # Variables to track costs
     total_fees = 0.0
     total_slippage_cost = 0.0
     trade_count = 0
 
     for date, target_assets in daily_choices.items():
-        # Hitung nilai portofolio saat ini sebelum ada aksi
+        # Calculate current portfolio value before any action
         current_portfolio_value = cash
         for asset, quantity in positions.items():
             current_portfolio_value += quantity * price_df.loc[date, asset]
         portfolio_history.append({'date': date, 'value': current_portfolio_value})
 
-        # --- Logika Rebalancing ---
+        # --- Rebalancing Logic ---
         current_assets = {asset for asset, qty in positions.items() if qty > 0}
         
-        # Jual aset yang tidak lagi ada di target
+        # Sell assets no longer in target
         for asset in current_assets - set(target_assets):
             price = price_df.loc[date, asset]
             sell_price = price * (1 - config_module.SLIPPAGE_PCT)
@@ -42,11 +42,11 @@ def run_simple_backtest(price_df, daily_choices, initial_capital, config_module)
             positions[asset] = 0.0
             trade_count += 1
 
-        # Beli aset baru atau sesuaikan posisi
+        # Buy new assets or adjust positions
         if target_assets:
             cash_per_asset = cash / len(target_assets)
             for asset in target_assets:
-                if asset not in current_assets: # Hanya beli jika ini adalah posisi baru
+                if asset not in current_assets: # Only buy if this is a new position
                     price = price_df.loc[date, asset]
                     buy_price = price * (1 + config_module.SLIPPAGE_PCT)
                     slippage_cost = cash_per_asset / buy_price * (buy_price - price)
@@ -55,7 +55,7 @@ def run_simple_backtest(price_df, daily_choices, initial_capital, config_module)
                     
                     quantity_to_buy = (cash_per_asset - fee) / buy_price
                     positions[asset] = quantity_to_buy
-                    cash -= cash_per_asset # Kurangi cash yang dialokasikan
+                    cash -= cash_per_asset # Reduce allocated cash
                     
                     total_fees += fee
                     total_slippage_cost += slippage_cost
@@ -72,7 +72,7 @@ def run_simple_backtest(price_df, daily_choices, initial_capital, config_module)
     return equity_curve, trade_stats
 
 def calculate_metrics(equity_curve):
-    """Menghitung metrik kinerja utama dari equity curve."""
+    """Calculate main performance metrics from equity curve."""
     if equity_curve.empty or len(equity_curve) < 2:
         return {
             "Final Value ($)": 0, "Total Return (%)": 0,
@@ -101,7 +101,7 @@ def calculate_metrics(equity_curve):
     return metrics
 
 def plot_equity_curve(equity_curve, title, output_path=None):
-    """Membuat plot equity curve dan menyimpannya jika path diberikan."""
+    """Create equity curve plot and save it if path is provided."""
     plt.figure(figsize=(14, 7))
     plt.plot(equity_curve.index, equity_curve['value'], label=title)
     plt.title(title)
@@ -112,6 +112,6 @@ def plot_equity_curve(equity_curve, title, output_path=None):
     
     if output_path:
         plt.savefig(output_path)
-        print(f"Grafik disimpan di: {output_path}")
+        print(f"Chart saved at: {output_path}")
     
     plt.show()

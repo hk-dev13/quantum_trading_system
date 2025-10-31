@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 import json
 from datetime import datetime
 
-# Tambahkan direktori root proyek ke dalam PYTHONPATH
+# Add project root directory to PYTHONPATH
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-# --- Impor ---
+# --- Imports ---
 from configs import config
 from src.ingestion.data_fetcher import build_price_df
 from src.models.predictor import predict_momentum
@@ -25,32 +25,32 @@ from src.backtest.backtester import run_simple_backtest, calculate_metrics, plot
 from src.monitoring.logger import log_event
 
 def create_run_artifact_dir(strategy_name, seed):
-    """Membuat direktori unik untuk menyimpan artefak dari sebuah run."""
+    """Create unique directory to save artifacts from a run."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     dir_name = f"{timestamp}_{strategy_name}_seed{seed}"
     path = os.path.join('data', 'artifacts', dir_name)
     os.makedirs(path, exist_ok=True)
-    print(f"Direktori artefak dibuat: {path}")
+    print(f"Artifact directory created: {path}")
     return path
 
 def run_momentum_strategy(price_df, config_module):
-    """Menjalankan alur kerja lengkap untuk strategi momentum."""
-    print("\nLangkah 2: Menjalankan prediksi momentum...")
+    """Run complete workflow for momentum strategy."""
+    print("\nStep 2: Running momentum prediction...")
     momentum_df = predict_momentum(price_df, config_module.MA_WINDOW)
     
-    print("\nLangkah 3: Memilih aset berdasarkan sinyal momentum...")
+    print("\nStep 3: Selecting assets based on momentum signal...")
     daily_choices = choose_assets_classical(momentum_df)
     
-    print("\nLangkah 4: Menjalankan backtest (dengan biaya & selip)...")
+    print("\nStep 4: Running backtest (with costs & slippage)...")
     equity_curve, trade_stats = run_simple_backtest(price_df, daily_choices, config_module.INITIAL_CAPITAL, config_module)
     return equity_curve, trade_stats
 
 def run_qaoa_strategy(price_df, config_module):
-    """Menjalankan alur kerja lengkap untuk strategi hibrid AI-QAOA."""
-    print("\nLangkah 2: Menjalankan prediksi (menggunakan model momentum)...")
+    """Run complete workflow for AI-QAOA hybrid strategy."""
+    print("\nStep 2: Running prediction (using momentum model)...")
     momentum_df = predict_momentum(price_df, config_module.MA_WINDOW)
 
-    print("\nLangkah 3: Memilih aset dengan QAOA untuk setiap hari...")
+    print("\nStep 3: Selecting assets with QAOA for each day...")
     daily_choices = {}
     start_day = config_module.MA_WINDOW
     for i in range(start_day, len(price_df)):
@@ -65,32 +65,32 @@ def run_qaoa_strategy(price_df, config_module):
         chosen_assets = optimize_portfolio_qaoa(top_n_preds, relevant_prices, config_module.OBJECTIVE_Q_FACTOR)
         daily_choices[current_date] = chosen_assets
 
-    print("\nLangkah 4: Menjalankan backtest (dengan biaya & selip)...")
+    print("\nStep 4: Running backtest (with costs & slippage)...")
     equity_curve, trade_stats = run_simple_backtest(price_df, daily_choices, config_module.INITIAL_CAPITAL, config_module)
     return equity_curve, trade_stats
 
 def main():
-    parser = argparse.ArgumentParser(description="Menjalankan backtest untuk strategi trading.")
-    parser.add_argument('--strategy', type=str, required=True, choices=['momentum', 'qaoa'], help="Pilih strategi.")
-    parser.add_argument('--seed', type=int, default=None, help="Seed untuk reproduktibilitas.")
+    parser = argparse.ArgumentParser(description="Run backtest for trading strategy.")
+    parser.add_argument('--strategy', type=str, required=True, choices=['momentum', 'qaoa'], help="Select strategy.")
+    parser.add_argument('--seed', type=int, default=None, help="Seed for reproducibility.")
     args = parser.parse_args()
     
     STRATEGY = args.strategy
     SEED = args.seed if args.seed is not None else random.randint(0, 10000)
     
     if SEED is not None:
-        print(f"*** Menjalankan dengan seed deterministik: {SEED} ***")
+        print(f"*** Running with deterministic seed: {SEED} ***")
         random.seed(SEED)
         np.random.seed(SEED)
 
-    print(f"\n--- Memulai Alur Kerja Backtest untuk Strategi: {STRATEGY.upper()} ---")
+    print(f"\n--- Starting Backtest Workflow for Strategy: {STRATEGY.upper()} ---")
     
-    # Buat direktori artefak
+    # Create artifact directory
     artifact_path = create_run_artifact_dir(STRATEGY, SEED)
     
     log_event("start_run", {"strategy": STRATEGY, "seed": SEED, "artifact_path": artifact_path})
 
-    print("\nLangkah 1: Mengambil data historis...")
+    print("\nStep 1: Loading historical data...")
     price_df = build_price_df(config.ASSETS, config.DAYS_HISTORY)
     
     if STRATEGY == 'momentum':
@@ -98,37 +98,37 @@ def main():
     elif STRATEGY == 'qaoa':
         equity_curve, trade_stats = run_qaoa_strategy(price_df, config)
 
-    print("\nLangkah 5: Menganalisis dan menyimpan hasil...")
+    print("\nStep 5: Analyzing and saving results...")
     if equity_curve.empty:
-        print("Equity curve kosong, tidak ada yang bisa dianalisis atau di-plot.")
+        print("Empty equity curve, nothing to analyze or plot.")
         log_event("end_run", {"status": "failed", "reason": "empty_equity_curve"})
         return
 
     metrics = calculate_metrics(equity_curve)
     
-    # Gabungkan metrik kinerja dengan statistik trading
+    # Combine performance metrics with trading statistics
     final_results = {**metrics, **trade_stats}
     
-    # Log hasil akhir yang lebih detail
+    # Log more detailed final results
     log_event("end_run", {"status": "success", "results": final_results})
 
-    print("\n--- Hasil Akhir Backtest (Net setelah Biaya & Selip) ---")
-    print(f"Strategi: {STRATEGY.upper()}")
+    print("\n--- Final Backtest Results (Net after Costs & Slippage) ---")
+    print(f"Strategy: {STRATEGY.upper()}")
     for key, value in final_results.items():
         print(f"{key}: {value}")
     
-    # Simpan hasil JSON
+    # Save JSON results
     results_json_path = os.path.join(artifact_path, 'results.json')
     with open(results_json_path, 'w') as f:
         json.dump(final_results, f, indent=4)
-    print(f"Hasil metrik disimpan di: {results_json_path}")
+    print(f"Metrics results saved at: {results_json_path}")
 
-    # Simpan grafik
-    plot_title = f"Kinerja Strategi {STRATEGY.title()} (Net of Costs)"
+    # Save plot
+    plot_title = f"{STRATEGY.title()} Strategy Performance (Net of Costs)"
     plot_path = os.path.join(artifact_path, 'equity_curve.png')
     plot_equity_curve(equity_curve, plot_title, plot_path)
 
-    print("\n--- Alur Kerja Selesai ---")
+    print("\n--- Workflow Complete ---")
 
 if __name__ == "__main__":
     main()
