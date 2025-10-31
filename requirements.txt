@@ -1,8 +1,7 @@
-# filepath: c:\Users\Husni kusuma\Desktop\quantum_trading_system\requirements.txt
 # Qiskit stack (versi stabil sebelum symengine)
-qiskit==0.46.0
-qiskit-optimization==0.6.0
-qiskit-aer==0.13.3
+qiskit
+qiskit-optimization
+qiskit-aer
 
 # Data & Analisis
 pandas
@@ -23,6 +22,7 @@ tensorflow
 # Data Validation & Quality
 jsonschema  # For data schema validation
 pydantic    # For data validation and settings management
+packaging   # For semantic version parsing
 
 # Async & Concurrency
 aiohttp     # For async HTTP requests
