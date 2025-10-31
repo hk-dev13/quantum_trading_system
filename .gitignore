@@ -15,8 +15,9 @@ __pycache__/
 *.swo
 *~
 
-# Kiro IDE
+# IDE
 /.kiro/
+/.kilo/
 
 # Data and Cache files
 data/
@@ -89,4 +90,11 @@ qiskit_cache/
 *.qasm
 data/price_history_cache.csv
 
+policies/
 /docs/
+configs/rollout.yml
+configs/slas.yml
+configs/ingestion.yml
+configs/data_sources.yml
+configs/assets.yml
+configs/alpha_beta.yml
