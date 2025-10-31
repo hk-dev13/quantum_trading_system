@@ -88,3 +88,5 @@ models/
 qiskit_cache/
 *.qasm
 data/price_history_cache.csv
+
+/docs/
